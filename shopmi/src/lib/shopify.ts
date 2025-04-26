@@ -69,18 +69,18 @@ export interface Collection {
 console.log('Variáveis de ambiente carregadas:');
 console.log('SHOPIFY_STORE_DOMAIN:', process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN);
 console.log('SHOPIFY_STOREFRONT_TOKEN_CLIENT:', process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT);
-console.log('SHOPIFY_ADMIN_API_TOKEN:', process.env.NEXT_PUBLIC_SHOPIFY_ADMIN_API_TOKEN);
+console.log('SHOPIFY_ADMIN_API_TOKEN:', process.env.SHOPIFY_ADMIN_API_TOKEN);
 
 // Tokens da API Shopify - usando variáveis de ambiente
 const SHOPIFY_STORE_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const SHOPIFY_STOREFRONT_TOKEN_CLIENT = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT;
-const SHOPIFY_ADMIN_API_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_ADMIN_API_TOKEN;
+const SHOPIFY_ADMIN_API_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
 if (!SHOPIFY_STOREFRONT_TOKEN_CLIENT) {
   throw new Error("A variável de ambiente NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT não está definida.");
 }
 if (!SHOPIFY_ADMIN_API_TOKEN) {
-  throw new Error("A variável de ambiente NEXT_PUBLIC_SHOPIFY_ADMIN_API_TOKEN não está definida.");
+  throw new Error("A variável de ambiente SHOPIFY_ADMIN_API_TOKEN não está definida.");
 }
 
 // Log para debug dos valores usados
