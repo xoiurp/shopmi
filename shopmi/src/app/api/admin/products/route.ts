@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     // Chamar a função de criação de produto do lado do servidor
     const result = await adminOperations.createProduct(data);
     return NextResponse.json(result);
-  } catch (error: any) { // Manter any por enquanto para simplificar
+  } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
     console.error('Erro na rota /api/admin/products:', error);
     return NextResponse.json(
       { error: 'Falha ao criar produto', details: error.message },
