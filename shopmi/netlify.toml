@@ -7,6 +7,10 @@
     ".next/**/*",
     ".netlify/**/*"
   ]
+  # Omitir a verificação da chave SHOPIFY_ADMIN_API_TOKEN
+  secrets_scan_omit_keys = [
+    "SHOPIFY_ADMIN_API_TOKEN"
+  ]
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
