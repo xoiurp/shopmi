@@ -1,6 +1,6 @@
 [build]
   base = "shopmi"
-  publish = "shopmi/.next"
+  publish = ".next" # Corrigido o caminho do diretório de publish
   command = "npm run build"
   # Omitir a verificação de segredos em diretórios de cache e build
   secrets_scan_omit_paths = [
