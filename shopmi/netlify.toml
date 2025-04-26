@@ -1,0 +1,12 @@
+[build]
+  base = "shopmi"
+  publish = "shopmi/.next"
+  command = "npm run build"
+  # Omitir a verificação de segredos em diretórios de cache e build
+  secrets_scan_omit_paths = [
+    ".next/**/*",
+    ".netlify/**/*"
+  ]
+
+[[plugins]]
+package = "@netlify/plugin-nextjs"
