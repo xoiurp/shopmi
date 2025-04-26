@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { createProduct, createCollection, ProductCreateInput } from '../../lib/shopify';
+// Removido createProduct e createCollection, pois serão chamados via API routes
+// import { createProduct, createCollection, ProductCreateInput } from '../../lib/shopify';
+import { ProductCreateInput } from '../../lib/shopify'; // Manter a interface se ainda for necessária
 import Link from 'next/link';
 
 export default function AdminPage() {
@@ -65,17 +67,30 @@ export default function AdminPage() {
     updateProductForm('variants', updatedVariants);
   };
 
-  // Função para enviar o formulário de produto
+  // Função para enviar o formulário de produto (agora chama a API route)
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProductLoading(true);
     setProductMessage({ type: '', text: '' });
 
     try {
-      const result = await createProduct(productForm);
-      setProductMessage({ 
-        type: 'success', 
-        text: `Produto "${result.title}" criado com sucesso! ID: ${result.id}` 
+      const response = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productForm),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.details || 'Erro desconhecido ao criar produto');
+      }
+
+      setProductMessage({
+        type: 'success',
+        text: `Produto "${result.title}" criado com sucesso! ID: ${result.id}`
       });
       // Limpar o formulário
       setProductForm({
@@ -90,28 +105,37 @@ export default function AdminPage() {
     } catch (error) {
       setProductMessage({
         type: 'error',
-        text: `Erro ao criar produto: ${error instanceof Error ? error.message : String(error)}` 
+        text: `Erro ao criar produto: ${error instanceof Error ? error.message : String(error)}`
       });
     } finally {
       setIsProductLoading(false);
     }
   };
 
-  // Função para enviar o formulário de coleção
+  // Função para enviar o formulário de coleção (agora chama a API route)
   const handleCollectionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCollectionLoading(true);
     setCollectionMessage({ type: '', text: '' });
 
     try {
-      const result = await createCollection(
-        collectionForm.title,
-        collectionForm.description,
-        collectionForm.image || undefined
-      );
-      setCollectionMessage({ 
-        type: 'success', 
-        text: `Coleção "${result.title}" criada com sucesso! ID: ${result.id}` 
+      const response = await fetch('/api/admin/collections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(collectionForm),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.details || 'Erro desconhecido ao criar coleção');
+      }
+
+      setCollectionMessage({
+        type: 'success',
+        text: `Coleção "${result.title}" criada com sucesso! ID: ${result.id}`
       });
       // Limpar o formulário
       setCollectionForm({
@@ -122,7 +146,7 @@ export default function AdminPage() {
     } catch (error) {
       setCollectionMessage({
         type: 'error',
-        text: `Erro ao criar coleção: ${error instanceof Error ? error.message : String(error)}` 
+        text: `Erro ao criar coleção: ${error instanceof Error ? error.message : String(error)}`
       });
     } finally {
       setIsCollectionLoading(false);
@@ -146,7 +170,7 @@ export default function AdminPage() {
         {/* Formulário para criar produto */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Criar Novo Produto</h2>
-          
+
           {productMessage.text && (
             <div className={`mb-4 p-3 rounded ${
               productMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -154,7 +178,7 @@ export default function AdminPage() {
               {productMessage.text}
             </div>
           )}
-          
+
           <form onSubmit={handleProductSubmit}>
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="productTitle">
@@ -169,7 +193,7 @@ export default function AdminPage() {
                 required
               />
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="productDescription">
                 Descrição
@@ -182,7 +206,7 @@ export default function AdminPage() {
                 onChange={(e) => updateProductForm('descriptionHtml', e.target.value)}
               />
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="productType">
                 Tipo de Produto
@@ -195,7 +219,7 @@ export default function AdminPage() {
                 onChange={(e) => updateProductForm('productType', e.target.value)}
               />
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="productVendor">
                 Fabricante
@@ -208,7 +232,7 @@ export default function AdminPage() {
                 onChange={(e) => updateProductForm('vendor', e.target.value)}
               />
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="productTags">
                 Tags (separadas por vírgula)
@@ -221,7 +245,7 @@ export default function AdminPage() {
                 onChange={(e) => updateProductTags(e.target.value)}
               />
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
                 Imagem
@@ -253,7 +277,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
                 Variante
@@ -312,7 +336,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            
+
             <button
               type="submit"
               className="bg-[#FF6700] text-white py-2 px-4 rounded-md hover:bg-[#E05A00] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6700] focus:ring-opacity-50 disabled:opacity-50"
@@ -326,7 +350,7 @@ export default function AdminPage() {
         {/* Formulário para criar coleção */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Criar Nova Coleção</h2>
-          
+
           {collectionMessage.text && (
             <div className={`mb-4 p-3 rounded ${
               collectionMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -334,7 +358,7 @@ export default function AdminPage() {
               {collectionMessage.text}
             </div>
           )}
-          
+
           <form onSubmit={handleCollectionSubmit}>
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="collectionTitle">
@@ -349,7 +373,7 @@ export default function AdminPage() {
                 required
               />
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="collectionDescription">
                 Descrição
@@ -362,7 +386,7 @@ export default function AdminPage() {
                 onChange={(e) => setCollectionForm({...collectionForm, description: e.target.value})}
               />
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="collectionImage">
                 URL da Imagem
@@ -375,7 +399,7 @@ export default function AdminPage() {
                 onChange={(e) => setCollectionForm({...collectionForm, image: e.target.value})}
               />
             </div>
-            
+
             <button
               type="submit"
               className="bg-[#FF6700] text-white py-2 px-4 rounded-md hover:bg-[#E05A00] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6700] focus:ring-opacity-50 disabled:opacity-50"

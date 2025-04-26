@@ -69,19 +69,17 @@ export interface Collection {
 console.log('Variáveis de ambiente carregadas:');
 console.log('SHOPIFY_STORE_DOMAIN:', process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN);
 console.log('SHOPIFY_STOREFRONT_TOKEN_CLIENT:', process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT);
-console.log('SHOPIFY_ADMIN_API_TOKEN:', process.env.SHOPIFY_ADMIN_API_TOKEN);
+console.log('SHOPIFY_ADMIN_API_TOKEN:', process.env.SHOPIFY_ADMIN_API_TOKEN); // Mantido para log, mas não usado no cliente
 
 // Tokens da API Shopify - usando variáveis de ambiente
 const SHOPIFY_STORE_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const SHOPIFY_STOREFRONT_TOKEN_CLIENT = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT;
-const SHOPIFY_ADMIN_API_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const SHOPIFY_ADMIN_API_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN; // Mantido para log, mas não usado no cliente
 
 if (!SHOPIFY_STOREFRONT_TOKEN_CLIENT) {
   throw new Error("A variável de ambiente NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT não está definida.");
 }
-if (!SHOPIFY_ADMIN_API_TOKEN) {
-  throw new Error("A variável de ambiente SHOPIFY_ADMIN_API_TOKEN não está definida.");
-}
+// A verificação de SHOPIFY_ADMIN_API_TOKEN foi removida daqui, pois será feita no lado do servidor
 
 // Log para debug dos valores usados
 console.log('Valores usados para a integração:');
@@ -163,15 +161,6 @@ const storefrontLink = createHttpLink({
   },
 });
 
-// Criando o link HTTP para a API Admin GraphQL
-const adminLink = createHttpLink({
-  uri: `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2023-10/graphql.json`,
-  headers: {
-    'X-Shopify-Access-Token': SHOPIFY_ADMIN_API_TOKEN,
-    'Content-Type': 'application/json',
-  },
-});
-
 // Criando o cliente Apollo para a Storefront API
 export const storefrontClient = new ApolloClient({
   link: storefrontLink,
@@ -188,26 +177,7 @@ export const storefrontClient = new ApolloClient({
   },
 });
 
-// Criando o cliente Apollo para a Admin API
-export const adminClient = new ApolloClient({
-  link: adminLink,
-  cache: new InMemoryCache(),
-  defaultOptions: {
-    watchQuery: {
-      fetchPolicy: 'no-cache',
-      errorPolicy: 'ignore',
-    },
-    query: {
-      fetchPolicy: 'no-cache',
-      errorPolicy: 'all',
-    },
-    mutate: {
-      errorPolicy: 'all',
-    },
-  },
-});
-
-// Função para obter produtos
+// Funções para obter dados (Storefront API)
 export async function getProducts() {
   const query = `
     query GetProducts {
@@ -258,7 +228,6 @@ export async function getProducts() {
   }
 }
 
-// Função para obter um produto por handle (slug)
 export async function getProductByHandle(handle: string) {
   const query = `
     query GetProductByHandle($handle: String!) {
@@ -359,7 +328,6 @@ export async function getProductByHandle(handle: string) {
   }
 }
 
-// Função para obter categorias (collections)
 export async function getCollections() {
   const query = `
     query GetCollections {
@@ -399,7 +367,6 @@ export async function getCollections() {
   }
 }
 
-// Função para obter produtos por categoria (collection)
 export async function getProductsByCollection(collectionHandle: string) {
   const query = `
     query GetProductsByCollection($handle: String!) {
@@ -467,7 +434,6 @@ export async function getProductsByCollection(collectionHandle: string) {
   }
 }
 
-// Função para buscar produtos
 export async function searchProducts(query: string) {
   const gqlQuery = `
     query SearchProducts($query: String!) {
@@ -516,7 +482,7 @@ export async function searchProducts(query: string) {
   }
 }
 
-// Interface para os dados do produto a ser criado
+// Interface para os dados do produto a ser criado (mantida para referência, mas a função será movida)
 export interface ProductCreateInput {
   title: string;
   descriptionHtml?: string;
@@ -537,146 +503,4 @@ export interface ProductCreateInput {
   }[];
 }
 
-// Função para criar um produto usando a Admin API
-export async function createProduct(productData: ProductCreateInput) {
-  const productCreateMutation = gql`
-    mutation productCreate($input: ProductInput!) {
-      productCreate(input: $input) {
-        product {
-          id
-          title
-          handle
-          descriptionHtml
-          productType
-          vendor
-          tags
-          variants(first: 10) {
-            edges {
-              node {
-                id
-                title
-                price
-                compareAtPrice
-                sku
-                inventoryQuantity
-              }
-            }
-          }
-          images(first: 10) {
-            edges {
-              node {
-                id
-                src
-                altText
-              }
-            }
-          }
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-  `;
-
-  // Preparar as imagens no formato esperado pela API
-  const images = productData.images?.map(image => ({
-    src: image.src,
-    altText: image.altText || productData.title
-  })) || [];
-
-  // Preparar as variantes no formato esperado pela API
-  const variants = productData.variants?.map(variant => ({
-    price: variant.price,
-    compareAtPrice: variant.compareAtPrice,
-    sku: variant.sku,
-    inventoryQuantity: variant.inventoryQuantity || 0,
-    requiresShipping: variant.requiresShipping !== undefined ? variant.requiresShipping : true,
-    taxable: variant.taxable !== undefined ? variant.taxable : true
-  })) || [{ price: "0.00" }]; // Pelo menos uma variante é necessária
-
-  // Preparar o input para a mutação
-  const input = {
-    title: productData.title,
-    descriptionHtml: productData.descriptionHtml || "",
-    productType: productData.productType || "",
-    vendor: productData.vendor || "Xiaomi",
-    tags: productData.tags || [],
-    images: images,
-    variants: variants
-  };
-
-  try {
-    const response = await adminClient.mutate({
-      mutation: productCreateMutation,
-      variables: { input }
-    });
-
-    if (response.data.productCreate.userErrors.length > 0) {
-      console.error('Erros ao criar produto:', response.data.productCreate.userErrors);
-      throw new Error(response.data.productCreate.userErrors[0].message);
-    }
-
-    return response.data.productCreate.product;
-  } catch (error) {
-    console.error('Erro ao criar produto:', error);
-    throw error;
-  }
-}
-
-// Função para criar uma coleção (categoria) usando a Admin API
-export async function createCollection(title: string, description: string, image?: string) {
-  const collectionCreateMutation = gql`
-    mutation collectionCreate($input: CollectionInput!) {
-      collectionCreate(input: $input) {
-        collection {
-          id
-          title
-          handle
-          descriptionHtml
-          image {
-            id
-            src
-            altText
-          }
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-  `;
-
-  // Preparar o input para a mutação
-  const input: { title: string; descriptionHtml: string; image?: { src: string; altText?: string } } = {
-    title,
-    descriptionHtml: description
-  };
-
-  // Adicionar imagem se fornecida
-  if (image) {
-    input.image = {
-      src: image,
-      altText: title
-    };
-  }
-
-  try {
-    const response = await adminClient.mutate({
-      mutation: collectionCreateMutation,
-      variables: { input }
-    });
-
-    if (response.data.collectionCreate.userErrors.length > 0) {
-      console.error('Erros ao criar coleção:', response.data.collectionCreate.userErrors);
-      throw new Error(response.data.collectionCreate.userErrors[0].message);
-    }
-
-    return response.data.collectionCreate.collection;
-  } catch (error) {
-    console.error('Erro ao criar coleção:', error);
-    throw error;
-  }
-}
+// As funções createProduct e createCollection foram movidas para shopify-admin.ts

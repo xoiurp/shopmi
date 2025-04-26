@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
     SHOPIFY_STORE_DOMAIN: process.env.SHOPIFY_STORE_DOMAIN,
     SHOPIFY_STOREFRONT_TOKEN_CLIENT: process.env.SHOPIFY_STOREFRONT_TOKEN_CLIENT,
   },
+  output: 'standalone', // Adiciona esta linha para criar um build standalone
 };
 
 export default nextConfig;
