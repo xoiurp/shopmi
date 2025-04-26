@@ -3,11 +3,11 @@ import { adminOperations } from '@/lib/shopify-admin';
 
 export async function POST(request: Request) {
   try {
-    const { title, description, image } = await request.json();
+    const { title, description, image } = await request.json() as { title: string; description: string; image?: string };
     // Chamar a função de criação de coleção do lado do servidor
     const result = await adminOperations.createCollection(title, description, image);
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: any) { // Manter any por enquanto para simplificar
     console.error('Erro na rota /api/admin/collections:', error);
     return NextResponse.json(
       { error: 'Falha ao criar coleção', details: error.message },
