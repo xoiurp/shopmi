@@ -3,16 +3,40 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Definindo os tipos
+// Definindo os tipos
+export interface VariantOption {
+  name: string;
+  value: string;
+}
+
 export interface CartItem {
-  id: string;
+  id: string; // Geralmente o variantId
   title: string;
-  price: number;
+  price: number; // Preço atual da variante
   currencyCode: string;
   quantity: number;
-  image: string;
+  image: string; // Imagem da variante ou produto
   variantId: string;
   productId: string;
+  category?: string; // Categoria do produto (opcional)
+  variantOptions?: VariantOption[]; // Opções selecionadas da variante (opcional)
+  compareAtPrice?: { amount: string; currencyCode: string } | null; // Preço original (opcional)
+  tags?: string[]; // Tags do produto (opcional)
 }
+export interface ShippingOption {
+  id: number;
+  name: string;
+  price: string;
+  delivery_time?: number;
+  delivery_min?: number;
+  delivery_max?: number;
+  company?: {
+    id: number;
+    name: string;
+    picture: string;
+  };
+}
+
 
 interface CartContextType {
   cart: CartItem[];
@@ -24,6 +48,8 @@ interface CartContextType {
   toggleCart: () => void;
   totalItems: number;
   totalPrice: number;
+  selectedShipping: ShippingOption | null;
+  setSelectedShipping: (option: ShippingOption | null) => void;
 }
 
 // Criando o contexto
@@ -47,6 +73,7 @@ export function CartProvider({ children }: CartProviderProps) {
   // Estado para o carrinho
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
 
   // Carregar carrinho do localStorage ao iniciar
   useEffect(() => {
@@ -66,21 +93,23 @@ export function CartProvider({ children }: CartProviderProps) {
   }, [cart]);
 
   // Adicionar item ao carrinho (com quantidade específica)
+  // Adicionar item ao carrinho (com quantidade e dados adicionais)
   const addToCart = (itemToAdd: CartItem) => {
     setCart((prevCart) => {
-      // Verificar se o item (mesmo produto e variante) já existe no carrinho
       const existingItemIndex = prevCart.findIndex(
         (cartItem) => cartItem.variantId === itemToAdd.variantId
-      ); // Usar variantId para unicidade
+      );
 
       if (existingItemIndex >= 0) {
-        // Se o item já existe, aumentar a quantidade pela quantidade adicionada
+        // Se existe, atualiza a quantidade
         const updatedCart = [...prevCart];
-        updatedCart[existingItemIndex].quantity += itemToAdd.quantity; // Soma a quantidade
+        updatedCart[existingItemIndex].quantity += itemToAdd.quantity;
+        // Opcional: Atualizar outros dados se necessário (ex: preço pode mudar?)
+        // updatedCart[existingItemIndex] = { ...updatedCart[existingItemIndex], ...itemToAdd, quantity: updatedCart[existingItemIndex].quantity + itemToAdd.quantity };
         return updatedCart;
       } else {
-        // Se o item não existe, adicionar ao carrinho com a quantidade especificada
-        return [...prevCart, { ...itemToAdd }]; // Adiciona o item como está (já tem quantity)
+        // Se não existe, adiciona o novo item completo
+        return [...prevCart, itemToAdd];
       }
     });
     
@@ -137,6 +166,8 @@ export function CartProvider({ children }: CartProviderProps) {
     toggleCart,
     totalItems,
     totalPrice,
+    selectedShipping,
+    setSelectedShipping,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

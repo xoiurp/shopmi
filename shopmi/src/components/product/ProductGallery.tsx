@@ -10,56 +10,77 @@ interface ImageType {
 
 interface ProductGalleryProps {
   images: ImageType[];
+  selectedImageIndex: number;
+  setSelectedImageIndex: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  
+const ProductGallery: React.FC<ProductGalleryProps> = ({ images, selectedImageIndex, setSelectedImageIndex }) => {
+  const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
+
   // Se não houver imagens, use um placeholder
   if (images.length === 0) {
     images = [{ src: '', alt: 'Produto sem imagem' }];
   }
-  
+
   const mainImage = images[selectedImageIndex];
-  
+
+  const handleThumbnailClick = (index: number) => {
+    setSelectedImageIndex(index);
+  };
+
+  const handleScrollUp = () => {
+    setThumbnailStartIndex(prevIndex => Math.max(0, prevIndex - 1));
+  };
+
+  const handleScrollDown = () => {
+    setThumbnailStartIndex(prevIndex => Math.min(images.length - 3, prevIndex + 1));
+  };
+
+  const isScrollUpDisabled = thumbnailStartIndex === 0;
+  const isScrollDownDisabled = thumbnailStartIndex >= images.length - 3;
+
   return (
     <div className="w-full md:w-1/2 flex flex-col md:flex-row">
       {/* Miniaturas verticais - apenas desktop */}
       {images.length > 1 && (
         <div className="hidden md:flex flex-col justify-center gap-2 mr-4 w-20">
-          <div className="flex justify-center mb-2">
+          <div className={`flex justify-center mb-2 cursor-pointer ${isScrollUpDisabled ? 'opacity-50 cursor-not-allowed' : ''}`} onClick={handleScrollUp}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
           </div>
-          
-          {images.slice(0, 3).map((image, index) => (
-            <div
-              key={index}
-              className={`relative h-20 w-full rounded-md overflow-hidden cursor-pointer border ${
-                selectedImageIndex === index ? 'border-[#FF6700]' : 'hover:border-[#FF6700] border-gray-200'
-              }`}
-              onClick={() => setSelectedImageIndex(index)}
-            >
-              {image.src && (
-                <Image
-                  src={image.src}
-                  alt={image.alt}
-                  fill
-                  className="object-cover"
-                />
-              )}
+
+          <div className="overflow-hidden h-[260px]"> {/* Altura para 3 miniaturas + gaps */}
+            <div className="flex flex-col gap-2 transition-transform duration-300 ease-in-out" style={{ transform: `translateY(-${thumbnailStartIndex * (80 + 8)}px)` }}> {/* 80px altura da miniatura + 8px gap */}
+              {images.map((image, index) => (
+                <div
+                  key={index}
+                  className={`relative h-20 w-full rounded-md overflow-hidden cursor-pointer border ${
+                    selectedImageIndex === index ? 'border-[#FF6700]' : 'hover:border-[#FF6700] border-gray-200'
+                  }`}
+                  onClick={() => handleThumbnailClick(index)}
+                >
+                  {image.src && (
+                    <Image
+                      src={image.src}
+                      alt={image.alt}
+                      fill
+                      className="object-cover transition-opacity duration-300 ease-in-out"
+                    />
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-          
-          <div className="flex justify-center mt-2">
+          </div>
+
+          <div className={`flex justify-center mt-2 cursor-pointer ${isScrollDownDisabled ? 'opacity-50 cursor-not-allowed' : ''}`} onClick={handleScrollDown}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
         </div>
       )}
-      
+
       {/* Imagem principal */}
       <div className="flex-1">
         <div className="relative h-[500px] rounded-lg overflow-hidden">
@@ -68,7 +89,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
               src={mainImage.src}
               alt={mainImage.alt}
               fill
-              className="object-contain"
+              className="object-contain transition-opacity duration-300 ease-in-out"
               priority
             />
           ) : (
@@ -90,24 +111,24 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
             </div>
           )}
         </div>
-        
+
         {/* Miniaturas horizontais - apenas mobile */}
         {images.length > 1 && (
           <div className="flex md:hidden flex-row gap-2 mt-2 overflow-x-auto">
-            {images.slice(0, 3).map((image, index) => (
+            {images.map((image, index) => (
               <div
                 key={index}
                 className={`relative h-20 w-20 flex-shrink-0 rounded-md overflow-hidden cursor-pointer border ${
                   selectedImageIndex === index ? 'border-[#FF6700]' : 'hover:border-[#FF6700] border-gray-200'
                 }`}
-                onClick={() => setSelectedImageIndex(index)}
+                onClick={() => handleThumbnailClick(index)}
               >
                 {image.src && (
                   <Image
                     src={image.src}
                     alt={image.alt}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-opacity duration-300 ease-in-out"
                   />
                 )}
               </div>

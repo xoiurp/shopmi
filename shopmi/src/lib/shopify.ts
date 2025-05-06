@@ -7,6 +7,8 @@ export interface Product {
   handle: string;
   description?: string;
   descriptionHtml?: string;
+  productType?: string; // Adicionado tipo do produto
+  tags?: string[]; // Adicionado tags
   priceRange: {
     minVariantPrice: {
       amount: string;
@@ -30,7 +32,12 @@ export interface Product {
           amount: string;
           currencyCode: string;
         };
+        compareAtPrice?: {
+          amount: string;
+          currencyCode: string;
+        } | null;
         availableForSale: boolean;
+        quantityAvailable?: number;
         selectedOptions: { name: string; value: string }[];
         metafield?: { value: string } | null;
         mediavariant?: {
@@ -65,12 +72,6 @@ export interface Collection {
   } | null;
 }
 
-// Log para debug das variáveis de ambiente
-console.log('Variáveis de ambiente carregadas:');
-console.log('SHOPIFY_STORE_DOMAIN:', process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN);
-console.log('SHOPIFY_STOREFRONT_TOKEN_CLIENT:', process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT);
-console.log('SHOPIFY_ADMIN_API_TOKEN:', process.env.SHOPIFY_ADMIN_API_TOKEN); // Mantido para log, mas não usado no cliente
-
 // Tokens da API Shopify - usando variáveis de ambiente
 const SHOPIFY_STORE_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const SHOPIFY_STOREFRONT_TOKEN_CLIENT = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT;
@@ -81,11 +82,6 @@ if (!SHOPIFY_STOREFRONT_TOKEN_CLIENT) {
   throw new Error("A variável de ambiente NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT não está definida.");
 }
 // A verificação de SHOPIFY_ADMIN_API_TOKEN foi removida daqui, pois será feita no lado do servidor
-
-// Log para debug dos valores usados
-console.log('Valores usados para a integração:');
-console.log('SHOPIFY_STORE_DOMAIN:', SHOPIFY_STORE_DOMAIN);
-console.log('SHOPIFY_STOREFRONT_TOKEN_CLIENT:', SHOPIFY_STOREFRONT_TOKEN_CLIENT);
 
 // URL da API GraphQL da Shopify
 // Como estamos em modo de demonstração, usaremos dados mockados quando a API não estiver disponível
@@ -182,7 +178,7 @@ export const storefrontClient = new ApolloClient({
 export async function getProducts() {
   const query = `
     query GetProducts {
-      products(first: 10) {
+      products(first: 250) {
         edges {
           node {
             id
@@ -210,18 +206,14 @@ export async function getProducts() {
   `;
 
   try {
-    console.log('Tentando buscar produtos da Shopify...');
-    console.log('URL da API:', `https://${SHOPIFY_STORE_DOMAIN}/api/2023-10/graphql.json`);
-    console.log('Token usado:', SHOPIFY_STOREFRONT_TOKEN_CLIENT);
-    
     const response = await storefrontClient.query({
       query: gql(query),
     });
     
-    console.log('Resposta da API Shopify (produtos):', response);
+    // Removido log da resposta da API
     return response.data.products.edges.map((edge: { node: Product }) => edge.node);
   } catch (error) {
-    console.error('Erro ao buscar produtos:', error);
+    console.error('Erro ao buscar produtos:', error); // Manter log de erro
     // Retornar dados mockados em caso de erro
     console.warn('Usando dados mockados para produtos devido a erro na API');
     const { mockProducts } = createMockData();
@@ -238,6 +230,8 @@ export async function getProductByHandle(handle: string) {
         handle
         description
         descriptionHtml
+        productType # Buscar productType
+        tags # Buscar tags
         priceRange {
           minVariantPrice {
             amount
@@ -261,7 +255,13 @@ export async function getProductByHandle(handle: string) {
                 amount
                 currencyCode
               }
+              # Adiciona compareAtPrice à query se necessário
+              compareAtPrice {
+                amount
+                currencyCode
+              }
               availableForSale
+              quantityAvailable # Pede a quantidade disponível
               selectedOptions {
                 name
                 value
@@ -273,17 +273,17 @@ export async function getProductByHandle(handle: string) {
               # Busca o metafield com as imagens da variante
               mediavariant: metafield(namespace: "custom", key: "mediavariant") {
                 # Assumindo que o valor é uma lista de referências de mídia
-                references(first: 5) { # Pega as primeiras 5 imagens da variante
-                   nodes {
-                     ... on MediaImage {
-                       id
-                       image {
-                         originalSrc
-                         altText
-                       }
-                     }
-                   }
-                }
+  references(first: 20) { # Pega as primeiras 20 imagens da variante
+     nodes {
+       ... on MediaImage {
+         id
+         image {
+           originalSrc
+           altText
+         }
+       }
+     }
+  }
               }
             }
           }
@@ -291,19 +291,19 @@ export async function getProductByHandle(handle: string) {
         # Adicionando busca por metacampos específicos
         metafields(identifiers: [
           # Especificações técnicas
-          {namespace: "specs", key: "tela"},
-          {namespace: "specs", key: "sistema_operacional"},
-          {namespace: "specs", key: "sensores"},
-          {namespace: "specs", key: "rede_bandas"},
-          {namespace: "specs", key: "processador"},
-          {namespace: "specs", key: "memoria"},
-          {namespace: "specs", key: "garantia"},
-          {namespace: "specs", key: "dimensoes"},
-          {namespace: "specs", key: "conteudo_embalagem"},
-          {namespace: "specs", key: "conectividade"},
-          {namespace: "specs", key: "camera"},
-          {namespace: "specs", key: "bateria"},
-          {namespace: "specs", key: "audio_video"},
+          {namespace: "custom", key: "tela"},
+          {namespace: "custom", key: "sistema_operacional"},
+          {namespace: "custom", key: "sensores"},
+          {namespace: "custom", key: "rede_bandas"},
+          {namespace: "custom", key: "processador"},
+          {namespace: "custom", key: "memoria"},
+          {namespace: "custom", key: "garantia"},
+          {namespace: "custom", key: "dimensoes"},
+          {namespace: "custom", key: "conteudo_embalagem"},
+          {namespace: "custom", key: "conectividade"},
+          {namespace: "custom", key: "camera"},
+          {namespace: "custom", key: "bateria"},
+          {namespace: "custom", key: "audio_video"},
           # Conteúdo HTML específico para dispositivos móveis
           {namespace: "custom", key: "html_mobile"}
         ]) {
@@ -332,7 +332,7 @@ export async function getProductByHandle(handle: string) {
 export async function getCollections() {
   const query = `
     query GetCollections {
-      collections(first: 10) {
+      collections(first: 250) {
         edges {
           node {
             id
@@ -350,17 +350,14 @@ export async function getCollections() {
   `;
 
   try {
-    console.log('Tentando buscar coleções da Shopify...');
-    console.log('URL da API:', `https://${SHOPIFY_STORE_DOMAIN}/api/2023-10/graphql.json`);
-    
     const response = await storefrontClient.query({
       query: gql(query),
     });
     
-    console.log('Resposta da API Shopify (coleções):', response);
+    // Removido log da resposta da API
     return response.data.collections.edges.map((edge: { node: Collection }) => edge.node);
   } catch (error) {
-    console.error('Erro ao buscar coleções:', error);
+    console.error('Erro ao buscar coleções:', error); // Manter log de erro
     // Retornar coleções mockadas em caso de erro
     console.warn('Usando dados mockados para coleções devido a erro na API');
     const { mockCollections } = createMockData();

@@ -4,40 +4,66 @@ import React, { useState } from 'react';
 import { useCart } from '../../context/CartContext';
 import { CartItem } from '../../context/CartContext'; // Importa o tipo CartItem
 
+import { VariantOption } from '../../context/CartContext'; // Importar VariantOption
+
 interface Product {
-  id: string;
+  id: string; // Geralmente o variantId
   title: string;
-  price: number;
+  price: number; // Preço atual da variante
   currencyCode: string;
-  image: string;
-  variantId: string;
+  image: string; // Imagem da variante ou produto
+  variantId: string | null; // Permitir null
   productId: string;
+  category?: string; // Categoria do produto (opcional)
+  variantOptions?: VariantOption[]; // Opções selecionadas da variante (opcional)
+  compareAtPrice?: { amount: string; currencyCode: string } | null; // Preço original (opcional)
+  tags?: string[]; // Tags do produto (opcional)
 }
 
 interface AddToCartButtonProps {
-  product: Product;
+  product: Product; // Agora product contém os campos opcionais
   quantity?: number;
   className?: string;
+  disabled?: boolean;
 }
 
 const AddToCartButton: React.FC<AddToCartButtonProps> = ({
   product,
   quantity = 1,
   className = '',
+  disabled = false, // Receber e definir valor padrão
 }) => {
   const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAddToCart = () => {
+    // Não fazer nada se o botão estiver desabilitado ou variantId for null
+    if (disabled || !product.variantId) {
+      console.warn("Tentativa de adicionar ao carrinho com botão desabilitado ou variantId nulo.");
+      return;
+    }
+
     setIsAdding(true);
 
-    // Criar o objeto CartItem completo
+    // Criar o objeto CartItem completo - Garantir que variantId é string aqui
+    // Como verificamos !product.variantId acima, podemos usar type assertion aqui
+    // Criar o objeto CartItem completo, incluindo os novos campos opcionais
     const itemToAdd: CartItem = {
-      ...product, // Espalha as propriedades do produto
-      quantity: quantity, // Adiciona a quantidade selecionada
+      id: product.variantId as string, // Usar variantId como id principal do item no carrinho
+      title: product.title,
+      price: product.price,
+      currencyCode: product.currencyCode,
+      quantity: quantity,
+      image: product.image,
+      variantId: product.variantId as string,
+      productId: product.productId,
+      category: product.category, // Passar a categoria
+      variantOptions: product.variantOptions, // Passar as opções da variante
+      compareAtPrice: product.compareAtPrice, // Passar o preço original
+      tags: product.tags, // Passar as tags
     };
 
-    // Adicionar ao carrinho com a quantidade correta
+    // Adicionar ao carrinho
     addToCart(itemToAdd);
 
     // A lógica de setTimeout e updateQuantity não é mais necessária aqui
@@ -51,12 +77,12 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
   return (
     <button
       onClick={handleAddToCart}
-      disabled={isAdding}
+      disabled={disabled || isAdding} // Usar a prop disabled E o estado isAdding
       className={`h-[55px] w-full max-w-[418px] font-bold flex justify-center items-center relative text-white text-sm border border-[#FF6700] bg-[#FF6700] rounded-[50px] transition duration-300 hover:bg-white hover:text-[#FF6700] ${
-        isAdding ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer' // Mantido cursor e desabilitado visualmente
+        (disabled || isAdding) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white hover:text-[#FF6700] cursor-pointer' // Ajustar estilos de desabilitado
       } ${className}`}
     >
-      {isAdding ? (
+      {(isAdding) ? (
         <>
           <svg
             className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"

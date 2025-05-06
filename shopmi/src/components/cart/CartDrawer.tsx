@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useCart } from '../../context/CartContext';
 import CartItem from './CartItem';
 
@@ -10,14 +11,17 @@ interface CartDrawerProps {
 }
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
-  const { cart, totalItems, totalPrice, clearCart } = useCart();
+  const { cart, totalItems, totalPrice, clearCart, selectedShipping } = useCart();
 
   // Função para formatar preço
-  const formatPrice = (price: number, currencyCode: string = 'BRL') => {
+  const formatPrice = (price: number | string, currencyCode: string = 'BRL') => {
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(numericPrice)) return 'Preço inválido';
+    
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: currencyCode,
-    }).format(price);
+    }).format(numericPrice);
   };
 
   return (
@@ -30,31 +34,33 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         {/* Cabeçalho do carrinho */}
         <div className="flex items-center justify-between p-4 border-b bg-white text-gray-900"> {/* Mudado bg e text color */}
           <div className="flex items-center gap-2"> {/* Container para ícone e texto */}
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <h2 className="text-xl font-semibold">Minhas Compras</h2> {/* Texto atualizado */}
+            <h2 className="text-xl font-semibold">Meu Carrinho ({totalItems})</h2> {/* Texto atualizado */}
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-800" // Mudado text color do botão fechar
-            aria-label="Fechar carrinho"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div className="flex items-center gap-4">
+            <Link href="/cart" className="text-sm text-black-600 hover:underline">
+              Ver Todos
+            </Link>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-800" // Mudado text color do botão fechar
+              aria-label="Fechar carrinho"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Conteúdo do carrinho */}
@@ -102,9 +108,24 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
               <span>Subtotal ({totalItems} itens):</span>
               <span>{formatPrice(totalPrice)}</span>
             </div>
-            <div className="flex justify-between mb-4 text-sm text-gray-500">
+            {selectedShipping && (
+              <div className="flex justify-between mb-2 font-medium">
+                <span>Total com frete:</span>
+                <span>{formatPrice(totalPrice + parseFloat(selectedShipping.price))}</span>
+              </div>
+            )}
+            <div className="flex justify-between mb-4 text-sm">
               <span>Frete:</span>
-              <span>Calculado no checkout</span>
+              {selectedShipping ? (
+                <div className="text-right">
+                  <span className="font-medium text-gray-700">{formatPrice(selectedShipping.price)}</span>
+                  <div className="text-xs text-gray-500">
+                    {selectedShipping.name} ({selectedShipping.delivery_time} dias úteis)
+                  </div>
+                </div>
+              ) : (
+                <span className="text-gray-500">Calculado no checkout</span>
+              )}
             </div>
             <button className="w-full py-3 bg-[#FF6700] text-white rounded-md hover:bg-[#E05A00] transition-colors font-medium">
               Finalizar Compra

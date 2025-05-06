@@ -20,10 +20,16 @@ async function getCssContent(filePath: string): Promise<string> {
   }
 }
 
-// @ts-expect-error - Ignorando erro de tipagem para compatibilidade com o Netlify
-export default async function ProductPage({ params }) {
-  const { handle } = params;
-  const product = await getProductByHandle(handle);
+interface ProductPageProps {
+  params: {
+    handle: string;
+  };
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
+  // No Next.js 15, precisamos aguardar os parâmetros antes de usá-los
+  const resolvedParams = await params;
+  const product = await getProductByHandle(resolvedParams.handle);
 
   // Se o produto não for encontrado
   if (!product) {
@@ -56,21 +62,17 @@ export default async function ProductPage({ params }) {
     alt: edge.node.altText || product.title,
   }));
 
-  // Mapeia as variantes, incluindo o valor do metafield da cor
-  const variants = product.variants.edges.map((edge: { node: { id: string; title: string; price: { amount: string; currencyCode: string }; availableForSale: boolean; selectedOptions: { name: string; value: string }[]; metafield?: { value: string } | null; mediavariant?: { references?: { nodes: { image: { originalSrc: string; altText: string | null } }[] } } | null } }) => ({
-    id: edge.node.id,
-    title: edge.node.title,
-    price: edge.node.price.amount,
-    currencyCode: edge.node.price.currencyCode,
-    available: edge.node.availableForSale,
-    selectedOptions: edge.node.selectedOptions,
-    colorHex: edge.node.metafield?.value || null,
-    // Extrai as imagens da variante do metafield 'mediavariant'
+  // Mapeia as variantes, incluindo o valor do metafield da cor e objetos de preço completos
+  // Atualiza a tipagem inline de edge.node para incluir quantityAvailable
+  const variants = product.variants.edges.map((edge: { node: { id: string; title: string; price: { amount: string; currencyCode: string }; compareAtPrice?: { amount: string; currencyCode: string } | null; availableForSale: boolean; quantityAvailable?: number; selectedOptions: { name: string; value: string }[]; metafield?: { value: string } | null; mediavariant?: { references?: { nodes: { image: { originalSrc: string; altText: string | null } }[] } } | null } }) => ({
+    ...edge.node, // Inclui todas as propriedades originais do node, incluindo mediavariant
+    colorHex: edge.node.metafield?.value || null, // Adiciona a propriedade colorHex
+    // Extrai as imagens da variante do metafield 'mediavariant' e as mantém em variantImages (para compatibilidade com o uso atual em ProductClientDetails)
     variantImages: edge.node.mediavariant?.references?.nodes
       ?.filter((node: { image: { originalSrc: string; altText: string | null } }) => node && node.image) // Filtra nós válidos com imagem
       .map((node: { image: { originalSrc: string; altText: string | null } }) => ({
         src: node.image.originalSrc,
-        alt: node.image.altText || product.title, // Usa alt text da imagem ou título do produto
+        alt: node.image.altText || product.title, // Usa alt text da imagem da variante ou fallback
       })) || [], // Retorna array vazio se não houver imagens
   }));
   // Removendo logs de depuração
@@ -105,6 +107,9 @@ export default async function ProductPage({ params }) {
   const desktopCss = await getCssContent('../main-desk-14c.css');
   const mobileCss = await getCssContent('../main-mob-14.css');
 
+  // Determina se a bag de frete grátis deve ser exibida (preço acima de R$800)
+  const showFreeShippingBag = parseFloat(product.priceRange.minVariantPrice.amount) > 800;
+
   // Renderiza o componente cliente, passando os dados e o CSS como props
   return (
     <ProductClientDetails
@@ -116,6 +121,7 @@ export default async function ProductPage({ params }) {
       mainImage={mainImage}
       desktopCss={desktopCss} // Passa o CSS desktop
       mobileCss={mobileCss}   // Passa o CSS mobile
+      showFreeShippingBag={showFreeShippingBag} // Passa a nova prop
     />
   );
 }
