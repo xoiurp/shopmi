@@ -23,7 +23,8 @@ async function getCssContent(filePath: string): Promise<string> {
 // Removida a interface ProductPageProps para tipar diretamente na função
 export default async function ProductPage({
   params,
-  searchParams, // Adicionado searchParams mesmo que não usado diretamente, para conformidade
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  searchParams: _searchParams, // Adicionado searchParams mesmo que não usado diretamente, para conformidade e prefixado com _
 }: {
   params: { handle: string };
   searchParams?: { [key: string]: string | string[] | undefined };

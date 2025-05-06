@@ -293,7 +293,6 @@ export const adminOperations = {
            if (!(edge && typeof edge === 'object' && 'node' in edge && edge.node && typeof edge.node === 'object')) {
              return null; // Ou alguma outra forma de tratamento de erro/valor padrão
            }
-           // eslint-disable-next-line @typescript-eslint/no-explicit-any
            const node = edge.node as { title?: string, subcollectionsMetafield?: { value?: string }, [key: string]: unknown }; // Alterado para unknown
            let subcollections = [];
 
