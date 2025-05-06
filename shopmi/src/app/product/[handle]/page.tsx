@@ -20,18 +20,22 @@ async function getCssContent(filePath: string): Promise<string> {
   }
 }
 
-// Define a interface para as props da página
+// Define o tipo para params como uma Promise
+type ParamsType = Promise<{ handle: string }>;
+
+// Define a interface para as props da página, ajustando params para o novo tipo
 interface ProductPageProps {
-  params: { handle: string };
+  params: ParamsType; // Alterado para ParamsType
   searchParams?: { [key: string]: string | string[] | undefined };
 }
 
 export default async function ProductPage({
-  params,
+  params, // params agora é ParamsType
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  searchParams: _searchParams, // Adicionado searchParams mesmo que não usado diretamente, para conformidade e prefixado com _
-}: ProductPageProps) {
-  const product = await getProductByHandle(params.handle);
+  searchParams: _searchParams,
+}: { params: ParamsType; searchParams?: ProductPageProps['searchParams'] }) { // Tipagem inline para a desestruturação
+  const { handle } = await params; // Aguarda a Promise para obter o handle
+  const product = await getProductByHandle(handle); // Usa o handle resolvido
 
   // Se o produto não for encontrado
   if (!product) {
