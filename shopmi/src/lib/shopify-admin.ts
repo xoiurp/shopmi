@@ -279,15 +279,22 @@ export const adminOperations = {
       const allEdges = response.data.collections.edges;
       // TODO: Definir tipos mais precisos para 'edge' e 'node' da API do Shopify
       const filteredAndMappedCollections = allEdges
-        .filter((edge: { node: any }) => { // Filtrar primeiro
-          const node = edge.node;
-          // Incluir apenas se mainCollectionMetafield existir e seu valor for 'true'
-          // Considerando que metafields booleanos podem vir como string 'true' ou booleano true
-          return node && node.mainCollectionMetafield && (node.mainCollectionMetafield.value === 'true' || node.mainCollectionMetafield.value === true);
+        .filter((edge: unknown) => { // Filtrar primeiro - Usando unknown
+          // Type guard para edge e node
+          if (edge && typeof edge === 'object' && 'node' in edge && edge.node && typeof edge.node === 'object') {
+            const node = edge.node as { mainCollectionMetafield?: { value?: string | boolean } }; // Type assertion
+            // Incluir apenas se mainCollectionMetafield existir e seu valor for 'true'
+            return node.mainCollectionMetafield && (node.mainCollectionMetafield.value === 'true' || node.mainCollectionMetafield.value === true);
+          }
+          return false;
         })
-        .map((edge: { node: any }) => { // Mapear depois
-          const node = edge.node;
-          let subcollections = [];
+        .map((edge: unknown) => { // Mapear depois - Usando unknown
+           // Type guard para edge e node
+           if (!(edge && typeof edge === 'object' && 'node' in edge && edge.node && typeof edge.node === 'object')) {
+             return null; // Ou alguma outra forma de tratamento de erro/valor padrão
+           }
+           const node = edge.node as { title?: string, subcollectionsMetafield?: { value?: string }, [key: string]: any }; // Type assertion mais específica
+           let subcollections = [];
 
           if (node.subcollectionsMetafield && node.subcollectionsMetafield.value) {
             try {
@@ -302,8 +309,9 @@ export const adminOperations = {
           }
 
           // Remover os metafields extras do objeto final para limpeza
-          // Prefixando com underscore para indicar que são intencionalmente omitidas do restOfNode aqui,
-          // embora tenham sido usadas anteriormente.
+          // Remover os metafields extras do objeto final para limpeza
+          // Adicionando eslint-disable para as variáveis não utilizadas na desestruturação
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { subcollectionsMetafield: _subcollectionsMetafield, mainCollectionMetafield: _mainCollectionMetafield, ...restOfNode } = node;
 
           return {
@@ -390,7 +398,8 @@ export const adminOperations = {
          return [];
       }
       // TODO: Definir tipo para 'edge'
-      return response.data.collection.products.edges.map((edge: { node: any }) => edge.node);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return response.data.collection.products.edges.map((edge: { node: any }) => edge.node); // Mantendo any aqui por simplicidade, desabilitando a regra
 
     } catch (error) {
        if (!(error instanceof Error && error.message.startsWith('Erro GraphQL:'))) {

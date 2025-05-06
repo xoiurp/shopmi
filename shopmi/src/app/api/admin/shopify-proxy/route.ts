@@ -3,6 +3,7 @@ import { adminClient } from '@/lib/shopify-admin'; // Import the configured Apol
 import { gql } from '@apollo/client'; // Import gql
 
 // Basic authentication check (replace with your actual admin auth logic if needed)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isAdminAuthenticated(_request: Request): boolean {
   // Placeholder: Implement your actual admin session/token check here
   // For now, let's assume anyone reaching this endpoint is authenticated
@@ -99,9 +100,12 @@ export async function GET(request: Request) {
 
     if (error instanceof Error) {
       message = error.message;
-      // Attempt to get status from Apollo's networkError
-      if ((error as any).networkError && (error as any).networkError.statusCode) {
-        status = (error as any).networkError.statusCode;
+      // Safely access nested properties
+      if (typeof error === 'object' && error !== null && 'networkError' in error) {
+        const networkError = (error as { networkError?: { statusCode?: number } }).networkError;
+        if (networkError && typeof networkError.statusCode === 'number') {
+          status = networkError.statusCode;
+        }
       }
     }
     return NextResponse.json({ error: 'Shopify API Error', details: message }, { status });

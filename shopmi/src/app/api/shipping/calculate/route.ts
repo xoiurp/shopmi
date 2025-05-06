@@ -67,24 +67,34 @@ export async function POST(request: Request) {
       
       let message = 'Erro desconhecido ao comunicar com Melhor Envio';
       let status: number | undefined;
-      let responseData: any;
+      let responseData: unknown = null; // Alterado para unknown
       let stack: string | undefined;
+      let statusText: string | undefined;
 
       if (sdkError instanceof Error) {
         message = sdkError.message;
         stack = sdkError.stack;
-        if (typeof (sdkError as any).response?.status === 'number') {
-          status = (sdkError as any).response.status;
+        // Safely access response properties
+        if (typeof sdkError === 'object' && sdkError !== null && 'response' in sdkError) {
+          const response = (sdkError as { response?: { status?: number; data?: unknown; statusText?: string } }).response;
+          if (response) {
+            if (typeof response.status === 'number') {
+              status = response.status;
+            }
+            responseData = response.data;
+            if (typeof response.statusText === 'string') {
+              statusText = response.statusText;
+            }
+          }
         }
-        responseData = (sdkError as any).response?.data;
       }
       
       // Extrair mais detalhes do erro para depuração
-      const errorDetailsPayload = { // Alterado para const
+      const errorDetailsPayload = { 
         message,
         stack,
         status,
-        statusText: status ? (sdkError as any).response?.statusText : undefined, // Apenas se status existir
+        statusText: statusText, 
         data: responseData
       };
       
@@ -94,9 +104,9 @@ export async function POST(request: Request) {
       if (status === 401) {
         console.error('Erro de autenticação (401). Verifique se o token está correto e não expirou.');
         console.error('Client ID usado:', process.env.MELHOR_ENVIO_CLIENT_ID);
-        // Não logar o token completo por segurança
+        const token = process.env.MELHOR_ENVIO_TOKEN;
         console.error('Token (primeiros 10 caracteres):', 
-          process.env.MELHOR_ENVIO_TOKEN ? process.env.MELHOR_ENVIO_TOKEN.substring(0, 10) + '...' : 'não definido');
+          typeof token === 'string' ? token.substring(0, 10) + '...' : 'não definido');
       }
       
       // Retorna o erro para o cliente para depuração
@@ -124,15 +134,17 @@ export async function POST(request: Request) {
         // Resposta é um array vazio - pode não ser um erro, apenas sem opções
         console.warn('Nenhuma opção de frete retornada pela API Melhor Envio (array vazio).');
         // Não definimos como erro, apenas retornaremos array vazio
-      } else if (shippingOptions.every((opt: any) => opt && typeof opt === 'object' && 'error' in opt)) { // TODO: Define a more specific type for opt
+      } else if (shippingOptions.every((opt: unknown) => opt && typeof opt === 'object' && 'error' in opt)) { 
         // Só consideramos erro se TODAS as opções tiverem erro
         hasError = true;
         responseErrorDetails = 'Nenhuma opção de frete disponível para este CEP.';
         console.error('Todos os serviços retornaram erro:', responseErrorDetails);
-      } else if (shippingOptions.some((opt: any) => opt && typeof opt === 'object' && 'error' in opt)) { // TODO: Define a more specific type for opt
+      } else if (shippingOptions.some((opt: unknown) => opt && typeof opt === 'object' && 'error' in opt)) { 
         // Se apenas algumas opções tiverem erro, logamos mas não consideramos erro geral
-        const errorOption = shippingOptions.find((opt: any) => opt && typeof opt === 'object' && 'error' in opt); // TODO: Define a more specific type for opt
-        console.warn('Alguns serviços não estão disponíveis:', (errorOption as { error?: string })?.error);
+        const errorOption = shippingOptions.find((opt: unknown) => opt && typeof opt === 'object' && 'error' in opt); 
+        if (errorOption && typeof errorOption === 'object' && 'error' in errorOption) {
+          console.warn('Alguns serviços não estão disponíveis:', (errorOption as { error?: string }).error);
+        }
       }
     }
 
@@ -144,12 +156,15 @@ export async function POST(request: Request) {
     // 5. Retornar as opções de frete calculadas (se não houve erro)
     // Filtra apenas opções válidas (sem erro e com preço)
     const validOptions = Array.isArray(shippingOptions)
-      ? shippingOptions.filter((option: any) => // TODO: Define a more specific type for option
-          option && 
-          typeof option === 'object' && 
-          !('error' in option) && 
-          'price' in option
-        ) 
+      ? shippingOptions.filter((option: unknown): option is { price: string; [key: string]: unknown } => { // Type guard
+          if (option && typeof option === 'object' && option !== null) {
+            // Check if 'error' property does NOT exist and 'price' property exists and is a string
+            return !('error' in option) && 
+                   ('price' in option) && 
+                   typeof (option as { price: unknown }).price === 'string';
+          }
+          return false;
+        }) 
       : [];
 
     console.log('Opções de frete válidas:', JSON.stringify(validOptions, null, 2));

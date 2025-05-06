@@ -15,7 +15,9 @@ interface IsolatedHtmlContentProps {
 const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
   htmlContent,
   mobileHtmlContent,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   desktopCss: _desktopCss, // Manter a prop, mas não usá-la na injeção de CSS
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   mobileCss: _mobileCss, // Manter a prop, mas não usá-la na injeção de CSS
   mobileFooterHeight = 400, // Valor padrão para a altura do footer mobile
   desktopFooterHeight = 700, // Valor padrão para a altura do footer desktop
