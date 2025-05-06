@@ -27,9 +27,7 @@ interface ProductPageProps {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  // No Next.js 15, precisamos aguardar os parâmetros antes de usá-los
-  const resolvedParams = await params;
-  const product = await getProductByHandle(resolvedParams.handle);
+  const product = await getProductByHandle(params.handle);
 
   // Se o produto não for encontrado
   if (!product) {
@@ -107,9 +105,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const desktopCss = await getCssContent('../main-desk-14c.css');
   const mobileCss = await getCssContent('../main-mob-14.css');
 
-  // Determina se a bag de frete grátis deve ser exibida (preço acima de R$800)
-  const showFreeShippingBag = parseFloat(product.priceRange.minVariantPrice.amount) > 800;
-
   // Renderiza o componente cliente, passando os dados e o CSS como props
   return (
     <ProductClientDetails
@@ -121,7 +116,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
       mainImage={mainImage}
       desktopCss={desktopCss} // Passa o CSS desktop
       mobileCss={mobileCss}   // Passa o CSS mobile
-      showFreeShippingBag={showFreeShippingBag} // Passa a nova prop
     />
   );
 }
