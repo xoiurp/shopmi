@@ -51,7 +51,19 @@ export default async function ProductPage({ params }: { params: ParamsType }) {
     alt: edge.node.altText || product.title,
   }));
 
-  const variants = product.variants.edges.map((edge: { node: any }) => ({
+  const variants = product.variants.edges.map((edge: {
+    node: {
+      id: string;
+      title: string;
+      price: { amount: string; currencyCode: string };
+      compareAtPrice?: { amount: string; currencyCode: string } | null;
+      availableForSale: boolean;
+      quantityAvailable?: number;
+      selectedOptions: { name: string; value: string }[];
+      metafield?: { value: string } | null;
+      mediavariant?: { references?: { nodes: { image: { originalSrc: string; altText: string | null } }[] } } | null;
+    };
+  }) => ({
     ...edge.node,
     colorHex: edge.node.metafield?.value || null,
     variantImages: edge.node.mediavariant?.references?.nodes
@@ -61,6 +73,7 @@ export default async function ProductPage({ params }: { params: ParamsType }) {
         alt: node.image.altText || product.title,
       })) || [],
   }));
+  
 
   const colorOptionsMap = new Map<string, string>();
   variants.forEach((variant: { selectedOptions: { name: string; value: string }[]; colorHex: string | null }) => {
