@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
+import Image from 'next/image'; // Importar Image de next/image
 import { IMaskInput } from 'react-imask'; // Importar IMaskInput
 import axios from 'axios';
 import { Button } from "@/components/ui/button";
@@ -14,14 +15,14 @@ export default function ShippingCalculator() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleCepChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setCep(event.target.value);
-    // Limpa opções e erros ao digitar novo CEP
-    if (shippingOptions.length > 0) setShippingOptions([]);
-    // Com react-imask, o valor já vem sem máscara se 'unmask' for true
-    // if (shippingOptions.length > 0) setShippingOptions([]);
-    // if (error) setError(null);
-  };
+  // const handleCepChange = (event: React.ChangeEvent<HTMLInputElement>) => { // REMOVIDO - NÃO UTILIZADO
+  //   setCep(event.target.value);
+  //   // Limpa opções e erros ao digitar novo CEP
+  //   if (shippingOptions.length > 0) setShippingOptions([]);
+  //   // Com react-imask, o valor já vem sem máscara se 'unmask' for true
+  //   // if (shippingOptions.length > 0) setShippingOptions([]);
+  //   // if (error) setError(null);
+  // };
 
   // Função onAccept para react-imask
   const handleAccept = (value: string) => {
@@ -56,33 +57,32 @@ export default function ShippingCalculator() {
       } else {
         setError('Nenhuma opção de frete encontrada para este CEP.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) { // Alterado para unknown
       console.error("Erro ao calcular frete:", err);
       
-      // Extrair mensagem de erro detalhada da resposta
       let errorMessage = 'Erro ao calcular o frete. Tente novamente.';
       
-      if (err.response?.data) {
-        if (typeof err.response.data === 'string') {
-          errorMessage = err.response.data;
-        } else if (err.response.data.error) {
-          errorMessage = err.response.data.error;
+      if (axios.isAxiosError(err) && err.response?.data) { // Verifica se é um erro do Axios
+        const errorData = err.response.data;
+        if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (errorData && typeof errorData === 'object' && 'error' in errorData) {
+          errorMessage = (errorData as { error: string }).error;
           
-          // Se houver detalhes adicionais, incluí-los na mensagem
-          if (err.response.data.details) {
-            console.error('Detalhes do erro:', err.response.data.details);
-            if (typeof err.response.data.details === 'string') {
-              errorMessage += `: ${err.response.data.details}`;
-            }
+          if ('details' in errorData && typeof (errorData as { details: string }).details === 'string') {
+            console.error('Detalhes do erro:', (errorData as { details: string }).details);
+            errorMessage += `: ${(errorData as { details: string }).details}`;
           }
         }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
       }
       
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [cep]);
+  }, [cep, setSelectedShipping]); // Adicionado setSelectedShipping
 
   // Função para lidar com a seleção de uma opção de frete
   const handleSelectOption = (option: ShippingOption) => {
@@ -156,12 +156,15 @@ export default function ShippingCalculator() {
                 <div className="ml-3 flex justify-between w-full">
                   <label htmlFor={`shipping-option-${option.id}`} className="font-medium text-gray-700 cursor-pointer flex items-center">
                     {option.company?.picture && (
-                      <img
-                        src={option.company.picture}
-                        alt={option.company.name}
-                        className="h-4 mr-2"
-                        style={{ maxWidth: '60px' }}
-                      />
+                      <div className="relative h-4 w-auto mr-2" style={{ maxWidth: '60px' }}>
+                        <Image
+                          src={option.company.picture}
+                          alt={option.company.name || 'Logo da transportadora'}
+                          fill
+                          sizes="60px"
+                          className="object-contain"
+                        />
+                      </div>
                     )}
                     <span>{option.name}</span>
                   </label>

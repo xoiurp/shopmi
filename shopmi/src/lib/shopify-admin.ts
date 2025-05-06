@@ -277,14 +277,15 @@ export const adminOperations = {
 
       // Filtrar e mapear as coleções
       const allEdges = response.data.collections.edges;
+      // TODO: Definir tipos mais precisos para 'edge' e 'node' da API do Shopify
       const filteredAndMappedCollections = allEdges
-        .filter((edge: any) => { // Filtrar primeiro
+        .filter((edge: { node: any }) => { // Filtrar primeiro
           const node = edge.node;
           // Incluir apenas se mainCollectionMetafield existir e seu valor for 'true'
           // Considerando que metafields booleanos podem vir como string 'true' ou booleano true
-          return node.mainCollectionMetafield && (node.mainCollectionMetafield.value === 'true' || node.mainCollectionMetafield.value === true);
+          return node && node.mainCollectionMetafield && (node.mainCollectionMetafield.value === 'true' || node.mainCollectionMetafield.value === true);
         })
-        .map((edge: any) => { // Mapear depois
+        .map((edge: { node: any }) => { // Mapear depois
           const node = edge.node;
           let subcollections = [];
 
@@ -301,7 +302,9 @@ export const adminOperations = {
           }
 
           // Remover os metafields extras do objeto final para limpeza
-          const { subcollectionsMetafield, mainCollectionMetafield, ...restOfNode } = node;
+          // Prefixando com underscore para indicar que são intencionalmente omitidas do restOfNode aqui,
+          // embora tenham sido usadas anteriormente.
+          const { subcollectionsMetafield: _subcollectionsMetafield, mainCollectionMetafield: _mainCollectionMetafield, ...restOfNode } = node;
 
           return {
             ...restOfNode,
@@ -386,8 +389,8 @@ export const adminOperations = {
          console.error(`Estrutura inesperada: campo 'products' ausente em collection para ${collectionId}.`, response.data);
          return [];
       }
-
-      return response.data.collection.products.edges.map((edge: any) => edge.node);
+      // TODO: Definir tipo para 'edge'
+      return response.data.collection.products.edges.map((edge: { node: any }) => edge.node);
 
     } catch (error) {
        if (!(error instanceof Error && error.message.startsWith('Erro GraphQL:'))) {

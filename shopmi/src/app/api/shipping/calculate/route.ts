@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import melhorEnvio, { 
+import { 
   calculateShipment, 
   type ShippingCalculatePayload, 
-  type Address, 
+  // type Address, // Removido pois não é usado
   type PackageDimensions 
 } from '@/lib/melhorenvio';
+// import melhorEnvio, // Removido pois não é usado
 
 // Definindo tipos para clareza
 interface CalculateShippingRequest {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       package: defaultPackage,
     });
 
-    let shippingOptions: any; // Definir como any temporariamente para log
+    let shippingOptions: unknown; // Alterado para unknown
     try {
       // Payload completo para o cálculo de frete
       const payload: ShippingCalculatePayload = {
@@ -61,22 +62,36 @@ export async function POST(request: Request) {
       shippingOptions = await calculateShipment(payload);
       
       console.log('Resposta da API Melhor Envio:', JSON.stringify(shippingOptions, null, 2)); // Log detalhado da resposta
-    } catch (sdkError: any) {
+    } catch (sdkError: unknown) { // Alterado para unknown
       console.error('Erro direto da API Melhor Envio:', sdkError);
       
+      let message = 'Erro desconhecido ao comunicar com Melhor Envio';
+      let status: number | undefined;
+      let responseData: any;
+      let stack: string | undefined;
+
+      if (sdkError instanceof Error) {
+        message = sdkError.message;
+        stack = sdkError.stack;
+        if (typeof (sdkError as any).response?.status === 'number') {
+          status = (sdkError as any).response.status;
+        }
+        responseData = (sdkError as any).response?.data;
+      }
+      
       // Extrair mais detalhes do erro para depuração
-      let errorDetails = {
-        message: sdkError.message || 'Erro desconhecido',
-        stack: sdkError.stack,
-        status: sdkError.response?.status,
-        statusText: sdkError.response?.statusText,
-        data: sdkError.response?.data
+      const errorDetailsPayload = { // Alterado para const
+        message,
+        stack,
+        status,
+        statusText: status ? (sdkError as any).response?.statusText : undefined, // Apenas se status existir
+        data: responseData
       };
       
-      console.error('Detalhes do erro:', JSON.stringify(errorDetails, null, 2));
+      console.error('Detalhes do erro:', JSON.stringify(errorDetailsPayload, null, 2));
       
       // Se for erro 401 (Unauthorized), adicionar informações sobre o token
-      if (sdkError.response?.status === 401) {
+      if (status === 401) {
         console.error('Erro de autenticação (401). Verifique se o token está correto e não expirou.');
         console.error('Client ID usado:', process.env.MELHOR_ENVIO_CLIENT_ID);
         // Não logar o token completo por segurança
@@ -87,57 +102,63 @@ export async function POST(request: Request) {
       // Retorna o erro para o cliente para depuração
       return NextResponse.json({
         error: 'Erro na chamada da API Melhor Envio.',
-        details: errorDetails
-      }, { status: 502 }); // 502 Bad Gateway pode ser mais apropriado
+        details: errorDetailsPayload
+      }, { status: status || 502 }); // 502 Bad Gateway pode ser mais apropriado
     }
 
     // 4. Verificar a resposta do Melhor Envio (após a chamada bem-sucedida)
     let hasError = false;
-    let errorDetails = null;
+    let responseErrorDetails = null; // Renomeado para evitar conflito
 
     if (!shippingOptions) {
       hasError = true;
-      errorDetails = 'Resposta inválida da API Melhor Envio.';
-      console.error(errorDetails);
-    } else if (!Array.isArray(shippingOptions) && shippingOptions.error) {
+      responseErrorDetails = 'Resposta inválida da API Melhor Envio.';
+      console.error(responseErrorDetails);
+    } else if (typeof shippingOptions === 'object' && shippingOptions !== null && 'error' in shippingOptions && !Array.isArray(shippingOptions)) {
       // Caso a resposta seja um objeto de erro diretamente
       hasError = true;
-      errorDetails = shippingOptions.error;
-      console.error('Erro retornado pela API Melhor Envio (objeto):', errorDetails);
+      responseErrorDetails = (shippingOptions as { error: string }).error;
+      console.error('Erro retornado pela API Melhor Envio (objeto):', responseErrorDetails);
     } else if (Array.isArray(shippingOptions)) {
       if (shippingOptions.length === 0) {
         // Resposta é um array vazio - pode não ser um erro, apenas sem opções
         console.warn('Nenhuma opção de frete retornada pela API Melhor Envio (array vazio).');
         // Não definimos como erro, apenas retornaremos array vazio
-      } else if (shippingOptions.every((opt: any) => opt && opt.error)) {
+      } else if (shippingOptions.every((opt: any) => opt && typeof opt === 'object' && 'error' in opt)) { // TODO: Define a more specific type for opt
         // Só consideramos erro se TODAS as opções tiverem erro
         hasError = true;
-        errorDetails = 'Nenhuma opção de frete disponível para este CEP.';
-        console.error('Todos os serviços retornaram erro:', errorDetails);
-      } else if (shippingOptions.some((opt: any) => opt && opt.error)) {
+        responseErrorDetails = 'Nenhuma opção de frete disponível para este CEP.';
+        console.error('Todos os serviços retornaram erro:', responseErrorDetails);
+      } else if (shippingOptions.some((opt: any) => opt && typeof opt === 'object' && 'error' in opt)) { // TODO: Define a more specific type for opt
         // Se apenas algumas opções tiverem erro, logamos mas não consideramos erro geral
-        const errorOption = shippingOptions.find((opt: any) => opt && opt.error);
-        console.warn('Alguns serviços não estão disponíveis:', errorOption?.error);
+        const errorOption = shippingOptions.find((opt: any) => opt && typeof opt === 'object' && 'error' in opt); // TODO: Define a more specific type for opt
+        console.warn('Alguns serviços não estão disponíveis:', (errorOption as { error?: string })?.error);
       }
     }
 
     // Se houve algum erro detectado nos passos acima (todos os serviços indisponíveis)
     if (hasError) {
-      return NextResponse.json({ error: 'Erro ao calcular frete com Melhor Envio.', details: errorDetails }, { status: 500 });
+      return NextResponse.json({ error: 'Erro ao calcular frete com Melhor Envio.', details: responseErrorDetails }, { status: 500 });
     }
 
     // 5. Retornar as opções de frete calculadas (se não houve erro)
-    // Filtra apenas opções válidas (sem erro e com preço) - Ajustado para verificar erro em cada opção
+    // Filtra apenas opções válidas (sem erro e com preço)
     const validOptions = Array.isArray(shippingOptions)
-      ? shippingOptions.filter((option: any) => option && !option.error && option.price) // Garante que 'option' existe
+      ? shippingOptions.filter((option: any) => // TODO: Define a more specific type for option
+          option && 
+          typeof option === 'object' && 
+          !('error' in option) && 
+          'price' in option
+        ) 
       : [];
 
     console.log('Opções de frete válidas:', JSON.stringify(validOptions, null, 2));
     return NextResponse.json(validOptions);
 
-  } catch (error: any) {
+  } catch (error: unknown) { // Alterado para unknown
     // Este catch agora pega erros *antes* da chamada do SDK ou erros inesperados gerais
     console.error('Erro interno GERAL na API Route:', error);
-    return NextResponse.json({ error: 'Erro interno do servidor ao processar a requisição.', details: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Erro interno desconhecido';
+    return NextResponse.json({ error: 'Erro interno do servidor ao processar a requisição.', details: message }, { status: 500 });
   }
 }

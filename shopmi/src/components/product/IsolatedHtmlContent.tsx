@@ -305,7 +305,7 @@ const IsolatedHtmlContent: React.FC<IsolatedHtmlContentProps> = ({
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [htmlContent, mobileHtmlContent, isMobile, desktopCss, mobileCss, mobileFooterHeight, desktopFooterHeight, preserveOriginalStyles, iframeRef, contentToUse]); // Adicionado contentToUse
+  }, [htmlContent, mobileHtmlContent, isMobile, desktopCss, mobileCss, mobileFooterHeight, desktopFooterHeight, preserveOriginalStyles, fontSizeMetafield, iframeRef, contentToUse]); // Adicionado fontSizeMetafield e contentToUse
 
   return (
     <iframe

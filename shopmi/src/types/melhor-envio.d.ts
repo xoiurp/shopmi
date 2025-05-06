@@ -50,8 +50,8 @@ declare module 'melhor-envio' {
       min: number;
       max: number;
     };
-    packages?: any[];
-    additional_services?: any;
+    packages?: unknown[]; // Alterado para unknown[]
+    additional_services?: unknown; // Alterado para unknown
     company?: {
       id: number;
       name: string;

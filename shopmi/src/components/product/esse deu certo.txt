@@ -1,0 +1,213 @@
+4:34:42 AM: Build ready to start
+4:34:50 AM: build-image version: a40b0edf29b13e2c3f0580ec07565679cdb6f371 (noble)
+4:34:50 AM: buildbot version: a40b0edf29b13e2c3f0580ec07565679cdb6f371
+4:34:50 AM: Fetching cached dependencies
+4:34:50 AM: Starting to download cache of 978.8MB
+4:34:53 AM: Finished downloading cache in 2.38s
+4:34:53 AM: Starting to extract cache
+4:34:58 AM: Finished extracting cache in 5.106s
+4:34:58 AM: Finished fetching cache in 7.578s
+4:34:58 AM: Starting to prepare the repo for build
+4:34:58 AM: Preparing Git Reference refs/heads/master
+4:35:00 AM: Custom publish path detected. Proceeding with the specified path: 'shopmi/.next'
+4:35:01 AM: Starting to install dependencies
+4:35:01 AM: Started restoring cached mise cache
+4:35:02 AM: Finished restoring cached mise cache
+4:35:02 AM: Python version set to 3.13.3
+4:35:02 AM: Ruby version set to 2.7.2
+4:35:03 AM: Go version set to 1.19
+4:35:03 AM: Using PHP version 8.3
+4:35:04 AM: Started restoring cached Node.js version
+4:35:05 AM: Finished restoring cached Node.js version
+4:35:06 AM: v22.15.0 is already installed.
+4:35:06 AM: Now using node v22.15.0 (npm v10.9.2)
+4:35:06 AM: Enabling Node.js Corepack
+4:35:06 AM: Started restoring cached build plugins
+4:35:06 AM: Finished restoring cached build plugins
+4:35:06 AM: Started restoring cached corepack dependencies
+4:35:06 AM: Finished restoring cached corepack dependencies
+4:35:06 AM: No npm workspaces detected
+4:35:06 AM: Started restoring cached node modules
+4:35:06 AM: Finished restoring cached node modules
+4:35:06 AM: Installing npm packages using npm version 10.9.2
+4:35:07 AM: up to date, audited 356 packages in 946ms
+4:35:07 AM: 142 packages are looking for funding
+4:35:07 AM:   run `npm fund` for details
+4:35:07 AM: found 0 vulnerabilities
+4:35:07 AM: npm packages installed
+4:35:08 AM: Successfully installed dependencies
+4:35:08 AM: Starting build script
+4:35:09 AM: Detected 1 framework(s)
+4:35:09 AM: "next" at version "15.2.4"
+4:35:09 AM: Section completed: initializing
+4:35:10 AM: ​
+4:35:10 AM: Netlify Build                                                 
+4:35:10 AM: ────────────────────────────────────────────────────────────────
+4:35:10 AM: ​
+4:35:10 AM: ❯ Version
+4:35:10 AM:   @netlify/build 32.1.0
+4:35:10 AM: ​
+4:35:10 AM: ❯ Flags
+4:35:10 AM:   accountId: 6735e9a63476bd6315b99e53
+4:35:10 AM:   baseRelDir: true
+4:35:10 AM:   buildId: 680c8c91459282a4dd6905cf
+4:35:10 AM:   deployId: 680c8c91459282a4dd6905d1
+4:35:10 AM: ​
+4:35:10 AM: ❯ Current directory
+4:35:10 AM:   /opt/build/repo/shopmi
+4:35:10 AM: ​
+4:35:10 AM: ❯ Config file
+4:35:10 AM:   /opt/build/repo/shopmi/netlify.toml
+4:35:10 AM: ​
+4:35:10 AM: ❯ Context
+4:35:10 AM:   production
+4:35:10 AM: ​
+4:35:10 AM: ❯ Using Next.js Runtime - v5.10.7
+4:35:12 AM: Next.js cache restored
+4:35:12 AM: ​
+4:35:12 AM: build.command from netlify.toml                               
+4:35:12 AM: ────────────────────────────────────────────────────────────────
+4:35:12 AM: ​
+4:35:12 AM: $ npm run build
+4:35:12 AM: > loja-shopify@0.1.0 build
+4:35:12 AM: > next build
+4:35:13 AM:    ▲ Next.js 15.2.4
+4:35:13 AM:    Creating an optimized production build ...
+4:35:23 AM:  ✓ Compiled successfully
+4:35:23 AM:    Linting and checking validity of types ...
+4:35:26 AM:    Collecting page data ...
+4:35:27 AM: Variáveis de ambiente carregadas:
+4:35:27 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:27 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:27 AM: SHOPIFY_ADMIN_API_TOKEN: ****
+4:35:27 AM: Valores usados para a integração:
+4:35:27 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:27 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:27 AM: Variáveis de ambiente carregadas:
+4:35:27 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:27 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:27 AM: SHOPIFY_ADMIN_API_TOKEN: ****
+4:35:27 AM: Valores usados para a integração:
+4:35:27 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:27 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:27 AM: Variáveis de ambiente carregadas:
+4:35:27 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:27 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:27 AM: SHOPIFY_ADMIN_API_TOKEN: ****
+4:35:27 AM: Valores usados para a integração:
+4:35:27 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:27 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:28 AM:    Generating static pages (0/10) ...
+4:35:29 AM:    Generating static pages (2/10)
+4:35:29 AM: Variáveis de ambiente carregadas:
+4:35:29 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:29 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:29 AM: SHOPIFY_ADMIN_API_TOKEN: ****
+4:35:29 AM: Valores usados para a integração:
+4:35:29 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:29 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:29 AM: Variáveis de ambiente carregadas:
+4:35:29 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:29 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:29 AM: SHOPIFY_ADMIN_API_TOKEN: ****
+4:35:29 AM: Valores usados para a integração:
+4:35:29 AM: SHOPIFY_STORE_DOMAIN: ****
+4:35:29 AM: SHOPIFY_STOREFRONT_TOKEN_CLIENT: ****
+4:35:29 AM: Tentando buscar produtos da Shopify...
+4:35:29 AM: URL da API: https://****/api/2023-10/graphql.json
+4:35:29 AM: Token usado: ****
+4:35:29 AM:    Generating static pages (4/10)
+4:35:29 AM:    Generating static pages (7/10)
+4:35:29 AM: Resposta da API Shopify (produtos): {
+4:35:29 AM:   data: { products: { edges: [Array], __typename: 'ProductConnection' } },
+4:35:29 AM:   loading: false,
+4:35:29 AM:   networkStatus: 7
+4:35:29 AM: }
+4:35:29 AM: Tentando buscar coleções da Shopify...
+4:35:29 AM: URL da API: https://****/api/2023-10/graphql.json
+4:35:29 AM: Resposta da API Shopify (coleções): {
+4:35:29 AM:   data: {
+4:35:29 AM:     collections: { edges: [Array], __typename: 'CollectionConnection' }
+4:35:29 AM:   },
+4:35:29 AM:   loading: false,
+4:35:29 AM:   networkStatus: 7
+4:35:29 AM: }
+4:35:29 AM:  ✓ Generating static pages (10/10)
+4:35:30 AM:    Finalizing page optimization ...
+4:35:30 AM:    Collecting build traces ...
+4:35:38 AM: Route (app)                                 Size  First Load JS    
+4:35:38 AM: ┌ ○ /                                    34.8 kB         202 kB
+4:35:38 AM: ├ ○ /_not-found                            977 B         102 kB
+4:35:38 AM: ├ ○ /admin                               2.19 kB         106 kB
+4:35:38 AM: ├ ƒ /api/admin/collections                 139 B         101 kB
+4:35:38 AM: ├ ƒ /api/admin/products                    139 B         101 kB
+4:35:38 AM: ├ ƒ /product/[handle]                    5.17 kB         114 kB
+4:35:38 AM: ├ ○ /search                              1.62 kB         169 kB
+4:35:38 AM: ├ ○ /shop                                1.67 kB         111 kB
+4:35:38 AM: └ ƒ /shop/[category]                     1.67 kB         111 kB
+4:35:38 AM: + First Load JS shared by all             101 kB
+4:35:38 AM:   ├ chunks/4bd1b696-cd8ec9463c0251f0.js  53.2 kB
+4:35:38 AM:   ├ chunks/684-568e8110890ed0a6.js       45.3 kB
+4:35:38 AM:   └ other shared chunks (total)          1.96 kB
+4:35:38 AM: ○  (Static)   prerendered as static content
+4:35:38 AM: ƒ  (Dynamic)  server-rendered on demand
+4:35:38 AM: ​
+4:35:38 AM: (build.command completed in 25.7s)
+4:35:38 AM: Next.js cache saved
+4:35:38 AM: Next.js cache saved
+4:35:39 AM: ​
+4:35:39 AM: Functions bundling                                            
+4:35:39 AM: ────────────────────────────────────────────────────────────────
+4:35:39 AM: ​
+4:35:39 AM: Packaging Functions from .netlify/functions-internal directory:
+4:35:39 AM:  - ___netlify-server-handler/___netlify-server-handler.mjs
+4:35:39 AM: ​
+4:35:41 AM: ​
+4:35:41 AM: (Functions bundling completed in 2s)
+4:35:42 AM: ​
+4:35:42 AM: Deploy site                                                   
+4:35:42 AM: ────────────────────────────────────────────────────────────────
+4:35:42 AM: ​
+4:35:42 AM: Starting to deploy site from 'shopmi/.next'
+4:35:42 AM: Calculating files to upload
+4:35:42 AM: 9 new file(s) to upload
+4:35:42 AM: 1 new function(s) to upload
+4:35:50 AM: Starting post processing
+4:35:50 AM: Post processing - redirect rules
+4:35:50 AM: Skipping form detection
+4:35:50 AM: Post processing - header rules
+4:35:50 AM: Post processing done
+4:35:50 AM: Section completed: postprocessing
+4:35:50 AM: Section completed: deploying
+4:35:51 AM: Site is live ✨
+4:35:52 AM: Finished waiting for live deploy in 2.274s
+4:35:52 AM: Site deploy was successfully initiated
+4:35:52 AM: ​
+4:35:52 AM: (Deploy site completed in 10.5s)
+4:35:56 AM: ​
+4:35:56 AM: Netlify Build Complete                                        
+4:35:56 AM: ────────────────────────────────────────────────────────────────
+4:35:56 AM: ​
+4:35:56 AM: (Netlify Build completed in 45.5s)
+4:35:56 AM: Caching artifacts
+4:35:56 AM: Started saving node modules
+4:35:56 AM: Finished saving node modules
+4:35:56 AM: Started saving build plugins
+4:35:56 AM: Finished saving build plugins
+4:35:56 AM: Started saving mise cache
+4:35:56 AM: Finished saving mise cache
+4:35:56 AM: Started saving corepack cache
+4:35:56 AM: Finished saving corepack cache
+4:35:56 AM: Started saving emacs cask dependencies
+4:35:56 AM: Finished saving emacs cask dependencies
+4:35:56 AM: Started saving maven dependencies
+4:35:56 AM: Finished saving maven dependencies
+4:35:56 AM: Started saving boot dependencies
+4:35:56 AM: Finished saving boot dependencies
+4:35:56 AM: Started saving rust rustup cache
+4:35:56 AM: Finished saving rust rustup cache
+4:35:56 AM: Build script success
+4:35:56 AM: Section completed: building
+4:37:42 AM: Uploading Cache of size 979.7MB
+4:37:44 AM: Section completed: cleanup
+4:37:44 AM: Finished processing build request in 2m54.253s

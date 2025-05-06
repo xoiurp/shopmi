@@ -15,8 +15,8 @@ interface IsolatedHtmlContentProps {
 const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
   htmlContent,
   mobileHtmlContent,
-  desktopCss, // Manter a prop, mas não usá-la na injeção de CSS
-  mobileCss, // Manter a prop, mas não usá-la na injeção de CSS
+  desktopCss: _desktopCss, // Manter a prop, mas não usá-la na injeção de CSS
+  mobileCss: _mobileCss, // Manter a prop, mas não usá-la na injeção de CSS
   mobileFooterHeight = 400, // Valor padrão para a altura do footer mobile
   desktopFooterHeight = 700, // Valor padrão para a altura do footer desktop
   preserveOriginalStyles = false, // Por padrão, não preserva estilos originais

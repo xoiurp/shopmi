@@ -52,8 +52,8 @@ interface ShippingResponse {
     min: number;
     max: number;
   };
-  packages?: any[];
-  additional_services?: any;
+  packages?: unknown[]; // Alterado para unknown[]
+  additional_services?: unknown; // Alterado para unknown
   company?: {
     id: number;
     name: string;
@@ -66,7 +66,7 @@ interface ShippingResponse {
 const API_URL = 'https://sandbox.melhorenvio.com.br/api/v2'; // URL do sandbox
 const TOKEN = process.env.MELHOR_ENVIO_TOKEN;
 const CLIENT_ID = process.env.MELHOR_ENVIO_CLIENT_ID;
-const CLIENT_SECRET = process.env.MELHOR_ENVIO_CLIENT_SECRET;
+// const CLIENT_SECRET = process.env.MELHOR_ENVIO_CLIENT_SECRET; // Removido - não utilizado
 
 // Função para formatar o token de acesso (adicionar prefixo "Bearer " se necessário)
 function formatToken(token: string | undefined): string {
@@ -111,7 +111,8 @@ async function calculateShipment(payload: ShippingCalculatePayload): Promise<Shi
 }
 
 // Função para obter serviços de envio disponíveis
-async function getShipmentServices(): Promise<any> {
+// TODO: Definir uma interface para a resposta de getShipmentServices
+async function getShipmentServices(): Promise<unknown> {
   try {
     const response = await apiClient.get('/me/shipment/services');
     return response.data;
@@ -137,9 +138,11 @@ export type {
 };
 
 // Para manter compatibilidade com código existente, exportamos um objeto com as mesmas propriedades
-export default {
+const melhorEnvioService = {
   shipment: {
     calculate: calculateShipment,
     getServices: getShipmentServices
   }
 };
+
+export default melhorEnvioService;

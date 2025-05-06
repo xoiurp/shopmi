@@ -3,7 +3,7 @@ import { adminClient } from '@/lib/shopify-admin'; // Import the configured Apol
 import { gql } from '@apollo/client'; // Import gql
 
 // Basic authentication check (replace with your actual admin auth logic if needed)
-function isAdminAuthenticated(request: Request): boolean {
+function isAdminAuthenticated(_request: Request): boolean {
   // Placeholder: Implement your actual admin session/token check here
   // For now, let's assume anyone reaching this endpoint is authenticated
   // IMPORTANT: Secure this properly in a real application!
@@ -66,6 +66,12 @@ export async function GET(request: Request) {
       }
     `;
 
+    // Check if adminClient is initialized
+    if (!adminClient) {
+      console.error('Shopify Admin Client is not initialized.');
+      throw new Error('Shopify Admin Client is not initialized. Check Shopify Admin configuration.');
+    }
+
     // Use the adminClient (Apollo Client) to execute the query
     const { data, error, errors } = await adminClient.query({
       query: gql(query), // Wrap the query string with gql
@@ -86,12 +92,18 @@ export async function GET(request: Request) {
     // Return the raw data part of the response from Shopify
     return NextResponse.json(data);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching from Shopify Admin API:', error);
-    // Return a generic error message
-    const message = error.message || 'Failed to fetch data from Shopify';
-    // Determine status code if possible (Apollo errors might not have standard HTTP status)
-    const status = error.networkError?.statusCode || 500;
-    return NextResponse.json({ error: 'Shopify API Error', details: message }, { status: status });
+    let message = 'Failed to fetch data from Shopify';
+    let status = 500;
+
+    if (error instanceof Error) {
+      message = error.message;
+      // Attempt to get status from Apollo's networkError
+      if ((error as any).networkError && (error as any).networkError.statusCode) {
+        status = (error as any).networkError.statusCode;
+      }
+    }
+    return NextResponse.json({ error: 'Shopify API Error', details: message }, { status });
   }
 }

@@ -55,7 +55,7 @@ const Header = () => {
   const { totalItems, toggleCart, isCartOpen } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+  // const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null); // Removido - não utilizado
   const [collections, setCollections] = useState<Collection[]>([]);
   // const [products, setProducts] = useState<Product[]>([]); // Removido, não buscamos mais produtos gerais inicialmente
   const [productsByCategory, setProductsByCategory] = useState<Record<string, Product[]>>({});
@@ -148,7 +148,7 @@ const Header = () => {
       clearTimeout(leaveTimeout);
       leaveTimeout = null;
     }
-    setActiveMegaMenu(menuHandle);
+    // setActiveMegaMenu(menuHandle); // Removido - não utilizado
 
     // Buscar produtos para a coleção quando o mouse passar sobre o item
     // Não buscar para 'todos-produtos' aqui, pois ele não tem ID único
@@ -167,7 +167,7 @@ const Header = () => {
 
   const handleMouseLeave = () => {
     leaveTimeout = setTimeout(() => {
-      setActiveMegaMenu(null);
+      // setActiveMegaMenu(null); // Removido - não utilizado
     }, 200); // 200ms delay
   };
 

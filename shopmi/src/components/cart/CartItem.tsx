@@ -19,11 +19,11 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
     }).format(price);
   };
 
-  // Função para lidar com a mudança de quantidade
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newQuantity = parseInt(e.target.value, 10);
-    updateQuantity(item.id, newQuantity);
-  };
+  // Função para lidar com a mudança de quantidade (REMOVIDA - NÃO UTILIZADA)
+  // const handleQuantityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const newQuantity = parseInt(e.target.value, 10);
+  //   updateQuantity(item.id, newQuantity);
+  // };
 
   return (
     <div className="flex py-4 border-b border-gray-100 last:border-b-0"> {/* Remove borda externa, adiciona borda inferior sutil */}
