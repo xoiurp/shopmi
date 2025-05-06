@@ -20,14 +20,14 @@ async function getCssContent(filePath: string): Promise<string> {
   }
 }
 
-interface ProductPageProps {
-  params: {
-    handle: string;
-  };
+// Removida a interface ProductPageProps para tipar diretamente na função
+export default async function ProductPage({
+  params,
+  searchParams, // Adicionado searchParams mesmo que não usado diretamente, para conformidade
+}: {
+  params: { handle: string };
   searchParams?: { [key: string]: string | string[] | undefined };
-}
-
-export default async function ProductPage({ params }: ProductPageProps) {
+}) {
   const product = await getProductByHandle(params.handle);
 
   // Se o produto não for encontrado
