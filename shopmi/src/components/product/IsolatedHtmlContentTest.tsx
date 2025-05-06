@@ -10,6 +10,7 @@ interface IsolatedHtmlContentProps {
   mobileFooterHeight?: number; // Altura do footer em dispositivos móveis
   desktopFooterHeight?: number; // Altura do footer em dispositivos desktop
   preserveOriginalStyles?: boolean; // Nova prop para preservar os estilos originais
+  fontSizeMetafield?: string; // Nova prop para o metafield do tamanho da fonte
 }
 
 const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
@@ -22,6 +23,7 @@ const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
   mobileFooterHeight = 400, // Valor padrão para a altura do footer mobile
   desktopFooterHeight = 700, // Valor padrão para a altura do footer desktop
   preserveOriginalStyles = false, // Por padrão, não preserva estilos originais
+  fontSizeMetafield, // Adicionado fontSizeMetafield
 }) => {
   // Estado para detectar se estamos em um dispositivo móvel
   const [isMobile, setIsMobile] = useState(false);
@@ -133,7 +135,7 @@ const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
           overflow: hidden; /* Remove barras de rolagem no conteúdo */
           ${!preserveOriginalStyles ? `
           font-family: 'MiSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          font-size: 16px;
+          font-size: ${fontSizeMetafield ? fontSizeMetafield : '16px'};
           ` : ''}
           width: 100%;
         }
