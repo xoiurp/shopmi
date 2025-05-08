@@ -75,13 +75,10 @@ export interface Collection {
 // Tokens da API Shopify - usando variáveis de ambiente
 const SHOPIFY_STORE_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const SHOPIFY_STOREFRONT_TOKEN_CLIENT = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const SHOPIFY_ADMIN_API_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN; // Mantido para log, mas não usado no cliente
 
 if (!SHOPIFY_STOREFRONT_TOKEN_CLIENT) {
   throw new Error("A variável de ambiente NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN_CLIENT não está definida.");
 }
-// A verificação de SHOPIFY_ADMIN_API_TOKEN foi removida daqui, pois será feita no lado do servidor
 
 // URL da API GraphQL da Shopify
 // Como estamos em modo de demonstração, usaremos dados mockados quando a API não estiver disponível
