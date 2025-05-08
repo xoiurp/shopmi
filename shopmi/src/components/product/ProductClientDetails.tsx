@@ -19,6 +19,77 @@ import {
 import { Product } from '@/lib/shopify'; // Importar a interface Product atualizada
 import { ChevronDown, ChevronUp } from 'lucide-react'; // Importar ícones
 
+// Mapa para traduzir chaves de metafields para nomes amigáveis
+// As chaves aqui são a versão em minúsculas e com espaços das chaves originais dos metafields.
+const metafieldKeyToFriendlyNameMap: Record<string, string> = {
+  "sw conectividade bluetooth": "Bluetooth",
+  "sw conectividade gps": "GPS",
+  "sw conectividade wifi": "Wi-Fi",
+  "sw others app": "Aplicativos Compatíveis",
+  "sw others bateria": "Bateria",
+  "sw others camera": "Câmera",
+  "sw others chamada": "Chamadas Telefônicas",
+  "sw others diferenciais": "Diferenciais",
+  "sw others embalagem": "Conteúdo da Embalagem",
+  "sw others memoria local": "Armazenamento Interno",
+  "sw others musica": "Reprodução de Música",
+  "sw others pulseira": "Pulseira",
+  "sw others saude": "Monitoramento de Saúde",
+  "sw others sensores": "Sensores",
+  "sw others sports": "Modos Esportivos",
+  "sw others watter": "Resistência à Água", // Mantendo "watter" se essa for a chave real
+  "sw protecao tela": "Proteção da Tela",
+  "sw recursos tela": "Recursos da Tela",
+  "sw resolucao": "Resolução da Tela",
+  "sw tamanho tela": "Tamanho da Tela",
+  "sw tela sensivel ao toque": "Tela Sensível ao Toque",
+  "sw tipo tela": "Tipo de Tela",
+
+  // Chaves gerais (não "sw") - convertidas para minúsculas com espaços se aplicável
+  "tela": "Tela",
+  "sistema operacional": "Sistema Operacional", // Exemplo: se a chave for "Sistema Operacional"
+  "sensores": "Sensores (Geral)",
+  "rede bandas": "Bandas de Rede",
+  "processador": "Processador",
+  "memoria": "Memória",
+  "garantia": "Garantia",
+  "dimensoes": "Dimensões",
+  "conteudo embalagem": "Conteúdo da Embalagem (Geral)",
+  "conectividade": "Conectividade (Geral)",
+  "camera": "Câmera (Geral)",
+  "bateria": "Bateria (Geral)",
+  "audio video": "Áudio e Vídeo", // Exemplo: se a chave for "Audio Video"
+  "html mobile": "Detalhes Adicionais" // Para "html_mobile"
+};
+
+// Função para formatar a chave do metafield para um nome amigável
+function formatMetafieldKey(key: string): string {
+  // Normaliza a chave: minúsculas, substitui '.', '_', '-' por espaço, remove espaços duplicados e nas extremidades.
+  const normalizedKey = key.toLowerCase()
+                           .replace(/[\._-]/g, ' ')
+                           .replace(/\s+/g, ' ')
+                           .trim();
+  
+  if (metafieldKeyToFriendlyNameMap.hasOwnProperty(normalizedKey)) {
+    return metafieldKeyToFriendlyNameMap[normalizedKey];
+  }
+
+  // Fallback para chaves não mapeadas: capitaliza cada palavra da chave normalizada.
+  // Remove prefixos comuns como "sw " ou "others " apenas para a exibição de fallback.
+  let fallbackDisplay = normalizedKey;
+  if (fallbackDisplay.startsWith('sw ')) {
+    fallbackDisplay = fallbackDisplay.substring(3).trim();
+  }
+  if (fallbackDisplay.startsWith('others ')) {
+    fallbackDisplay = fallbackDisplay.substring(7).trim();
+  }
+  
+  return fallbackDisplay
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 // Definir a interface para as props que o componente receberá
 // Certifique-se que VariantNode reflete a estrutura passada de page.tsx
 // (incluindo price, compareAtPrice como objetos, e quantityAvailable)
@@ -33,6 +104,7 @@ interface ProductClientDetailsProps {
   mainImage: { src: string; alt: string };
   desktopCss?: string;
   mobileCss?: string;
+  showFreeShippingBag?: boolean;
 }
 
 // Interface para o metafield (usado em getMobileHtmlContent e Accordion)
@@ -502,8 +574,8 @@ export default function ProductClientDetails({
                   .filter((mf): mf is Metafield => !!(mf && mf.namespace === 'custom' && mf.value)) // Type guard
                   .map((metafield) => (
                     <div key={metafield.key} className="flex text-sm">
-                      <span className="font-medium w-1/3 capitalize">
-                        {metafield.key.replace(/_/g, ' ')}:
+                      <span className="font-medium w-1/3">
+                        {formatMetafieldKey(metafield.key)}:
                       </span>
                       <span className="text-gray-700 w-2/3">{metafield.value}</span>
                     </div>

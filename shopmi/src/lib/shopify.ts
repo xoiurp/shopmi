@@ -305,7 +305,30 @@ export async function getProductByHandle(handle: string) {
           {namespace: "custom", key: "bateria"},
           {namespace: "custom", key: "audio_video"},
           # Conteúdo HTML específico para dispositivos móveis
-          {namespace: "custom", key: "html_mobile"}
+          {namespace: "custom", key: "html_mobile"},
+          # Metafields específicos para Smartwatch (sw_)
+          {namespace: "custom", key: "sw_conectividade-bluetooth"},
+          {namespace: "custom", key: "sw_conectividade_gps"},
+          {namespace: "custom", key: "sw_conectividade_wifi"},
+          {namespace: "custom", key: "sw_others_app"},
+          {namespace: "custom", key: "sw_others_bateria"},
+          {namespace: "custom", key: "sw_others_camera"},
+          {namespace: "custom", key: "sw_others_chamada"},
+          {namespace: "custom", key: "sw_others_diferenciais"},
+          {namespace: "custom", key: "sw_others_embalagem"},
+          {namespace: "custom", key: "sw_others_memoria_local"},
+          {namespace: "custom", key: "sw_others_musica"},
+          {namespace: "custom", key: "sw_others_pulseira"},
+          {namespace: "custom", key: "sw_others_saude"},
+          {namespace: "custom", key: "sw_others_sensores"},
+          {namespace: "custom", key: "sw_others_sports"},
+          {namespace: "custom", key: "sw_others_watter"},
+          {namespace: "custom", key: "sw_protecao_tela"},
+          {namespace: "custom", key: "sw_recursos_tela"},
+          {namespace: "custom", key: "sw_resolucao"},
+          {namespace: "custom", key: "sw_tamanho_tela"},
+          {namespace: "custom", key: "sw_tela_sensivel_ao_toque"},
+          {namespace: "custom", key: "sw_tipo_tela"}
         ]) {
           key
           value

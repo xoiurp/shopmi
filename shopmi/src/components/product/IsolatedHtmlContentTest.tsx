@@ -255,20 +255,20 @@ const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
 
   return (
     <iframe
-      ref={iframeRef}
-      sandbox="allow-scripts allow-same-origin"
-      scrolling="no"
-      style={{
-        width: '100%',
-        height: `${iframeHeight}px`,
-        border: 'none',
-        display: 'block',
-        transition: 'height 0.3s ease-in-out',
-        overflow: 'hidden',
-      }}
-      className="isolated-content-iframe-test w-full" // Nova classe para teste
-      title="Conteúdo Isolado do Produto Teste"
-    />
+    ref={iframeRef}
+    sandbox="allow-scripts allow-same-origin"
+    scrolling="no"
+    style={{
+    width: '100%',
+    height: `${iframeHeight}px`,
+    border: 'none',
+    display: 'block',
+    transition: 'height 0.3s ease-in-out',
+    overflow: 'hidden',           
+  }}
+  className="isolated-content-iframe-test w-full"
+  title="Conteúdo Isolado do Produto Teste"
+/>
   );
 };
 

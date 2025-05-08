@@ -46,13 +46,14 @@ const Accordion: React.FC<AccordionProps> = ({ title, children, startOpen = fals
         )}
       </button>
       <div
-        className={`overflow-hidden transition-all duration-500 ease-in-out ${
-          isOpen ? 'max-h-screen' : 'max-h-0'
+        className={`grid overflow-hidden transition-all duration-500 ease-in-out ${
+          isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
-        style={{ transitionProperty: 'max-height' }} // Garante que a transição seja aplicada ao max-height
       >
-        <div className="py-4"> {/* Mantém o padding interno */}
-          {children}
+        <div className="overflow-hidden"> {/* Wrapper necessário para a técnica de animação com grid */}
+          <div className="py-4">
+            {children}
+          </div>
         </div>
       </div>
     </div>
