@@ -51,7 +51,7 @@ export default async function ProductPage({ params }: { params: ParamsType }) {
     alt: edge.node.altText || product.title,
   }));
 
-  const variants = product.variants.edges.map((edge: {
+  const variants = product.variants?.edges.map((edge: {
     node: {
       id: string;
       title: string;
@@ -72,7 +72,7 @@ export default async function ProductPage({ params }: { params: ParamsType }) {
         src: node.image.originalSrc,
         alt: node.image.altText || product.title,
       })) || [],
-  }));
+  })) || []; // Fallback para array vazio se product.variants ou product.variants.edges for undefined
   
 
   const colorOptionsMap = new Map<string, string>();
