@@ -26,14 +26,15 @@ import { FilterIcon } from 'lucide-react';
 const ITEMS_PER_PAGE = 12;
 
 // Temporariamente simplificando a função para isolar o erro de tipo
-export default function CategoryPage({ // Removido async
-  params,
-  searchParams,
-}: {
+
+interface MyPageProps { // Renomeando para evitar qualquer conflito com um PageProps global
   params: { category: string };
   searchParams?: { [key: string]: string | string[] | undefined };
-}) {
-  const { category } = params;
+}
+
+export default function CategoryPage(props: MyPageProps) { // Removido async, props tipadas como um todo
+  const { category } = props.params;
+  const searchParams = props.searchParams; // Acessando searchParams
   // const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
   // const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
 
