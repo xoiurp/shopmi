@@ -27,8 +27,8 @@ function SearchPageContent() {
 
       setLoading(true);
       try {
-        const results = await searchProducts(query);
-        setProducts(results);
+        const resultsConnection = await searchProducts({ queryText: query, first: 20 }); // Ajustado para passar objeto
+        setProducts(resultsConnection.edges.map(edge => edge.node)); // Extrair produtos dos edges
       } catch (error) {
         console.error('Erro ao buscar produtos:', error);
         setProducts([]);
@@ -108,7 +108,7 @@ function SearchPageContent() {
 
             {products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map((product) => (
+                {products.map((product: Product) => ( // Adicionada tipagem explícita para product
                   <ProductCard
                     key={product.id}
                     id={product.id}
