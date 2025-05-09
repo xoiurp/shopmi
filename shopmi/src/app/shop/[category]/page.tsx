@@ -25,13 +25,12 @@ import { FilterIcon } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 12;
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: {
+interface CategoryPageProps {
   params: { category: string };
   searchParams?: { [key: string]: string | string[] | undefined };
-}) {
+}
+
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { category } = params;
   const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
   const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
