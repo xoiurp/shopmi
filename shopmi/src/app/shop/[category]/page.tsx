@@ -28,8 +28,8 @@ const ITEMS_PER_PAGE = 12;
 // Temporariamente simplificando a função para isolar o erro de tipo
 
 interface MyPageProps {
-  params: Promise<any>; // Tentativa de diagnóstico extremo
-  searchParams?: { [key: string]: string | string[] | undefined };
+  params: Promise<any>; // Mantendo para teste
+  searchParams?: Promise<any>; // Tentativa de diagnóstico extremo
 }
 
 export default function CategoryPage(props: MyPageProps) { // Removido async
