@@ -17,9 +17,13 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchData() {
-      const prods = await getProducts();
+      const prodsData = await getProducts({ first: 12 }); // Passando argumento e usando .edges
       const colls = await getCollections();
-      setProducts(prods);
+      if (prodsData && prodsData.edges) {
+        setProducts(prodsData.edges.map(edge => edge.node));
+      } else {
+        setProducts([]); // Define como array vazio se não houver dados
+      }
       setCollections(colls);
     }
     fetchData();

@@ -7,9 +7,7 @@ import {
   PaginationContent,
   PaginationItem,
   PaginationNext,
-  PaginationPrevious, // Descomentado para usar
-  // PaginationLink,
-  // PaginationEllipsis,
+  PaginationPrevious,
 } from '../../../components/ui/pagination';
 import {
   Sheet,
@@ -25,66 +23,58 @@ import { FilterIcon } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 12;
 
-// Temporariamente simplificando a função para isolar o erro de tipo
-
-interface MyPageProps {
-  params: Promise<any>; // Mantendo para teste
-  searchParams?: Promise<any>; // Tentativa de diagnóstico extremo
+interface CategoryPageProps {
+  params: { category: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function CategoryPage(props: MyPageProps) { // Removido async
-  // Como params agora é uma Promise (para teste), não podemos desestruturar category diretamente
-  // Esta parte do código não funcionará em runtime, é apenas para teste de tipo no build
-  const category = "test-category"; // Valor placeholder
-  const searchParams = props.searchParams;
-  // const { category } = props.params; // Não funcionaria com params como Promise
-  // const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
-  // const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+  const { category } = params;
+  const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
+  const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
 
-  // interface ProductsByCollectionRequestParams {
-  //   collectionHandle: string;
-  //   first?: number;
-  //   last?: number;
-  //   after?: string | null;
-  //   before?: string | null;
-  //   // Adicione aqui outros filtros se getProductsByCollection os suportar
-  // }
+  interface ProductsByCollectionRequestParams {
+    collectionHandle: string;
+    first?: number;
+    last?: number;
+    after?: string | null;
+    before?: string | null;
+  }
 
-  // let productParams: ProductsByCollectionRequestParams = { collectionHandle: category, first: ITEMS_PER_PAGE };
-  // if (afterCursor) {
-  //   productParams.after = afterCursor;
-  // } else if (beforeCursor) {
-  //   productParams = { collectionHandle: category, last: ITEMS_PER_PAGE, before: beforeCursor };
-  //   delete productParams.first;
-  // }
+  let productParams: ProductsByCollectionRequestParams = { collectionHandle: category, first: ITEMS_PER_PAGE };
+  if (afterCursor) {
+    productParams.after = afterCursor;
+  } else if (beforeCursor) {
+    productParams = { collectionHandle: category, last: ITEMS_PER_PAGE, before: beforeCursor };
+    delete productParams.first;
+  }
 
-  // const categoryData: CollectionWithProductsPage | null = await getProductsByCollection(productParams);
-  // const allCollections: Collection[] = await getCollections();
+  const categoryData: CollectionWithProductsPage | null = await getProductsByCollection(productParams);
+  const allCollections: Collection[] = await getCollections();
 
-  // // Se a categoria não for encontrada ou não houver dados
-  // if (!categoryData) {
-  //   return (
-  //     <div className="container mx-auto px-4 py-16 text-center">
-  //       <h1 className="text-2xl font-bold mb-4">Categoria não encontrada</h1>
-  //       <p className="mb-8">A categoria que você está procurando não existe ou foi removida.</p>
-  //       <Link
-  //         href="/shop"
-  //         className="bg-[#FF6700] text-white py-2 px-6 rounded-md hover:bg-[#E05A00] transition-colors inline-block"
-  //       >
-  //         Voltar para a loja
-  //       </Link>
-  //     </div>
-  //   );
-  // }
+  if (!categoryData) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold mb-4">Categoria não encontrada</h1>
+        <p className="mb-8">A categoria que você está procurando não existe ou foi removida.</p>
+        <Link
+          href="/shop"
+          className="bg-[#FF6700] text-white py-2 px-6 rounded-md hover:bg-[#E05A00] transition-colors inline-block"
+        >
+          Voltar para a loja
+        </Link>
+      </div>
+    );
+  }
 
-  // const products = categoryData.products.edges.map(edge => edge.node);
-  // const pageInfo = categoryData.products.pageInfo;
+  const products = categoryData.products.edges.map(edge => edge.node);
+  const pageInfo = categoryData.products.pageInfo;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Categoria: {category}</h1>
-        {/* <div className="flex items-center text-sm text-gray-500">
+        <h1 className="text-3xl font-bold mb-2">{categoryData.title}</h1>
+        <div className="flex items-center text-sm text-gray-500">
           <Link href="/" className="hover:text-[#FF6700]">
             Início
           </Link>
@@ -94,27 +84,20 @@ export default function CategoryPage(props: MyPageProps) { // Removido async
           </Link>
           <span className="mx-2">/</span>
           <span>{categoryData.title}</span>
-        </div> */}
+        </div>
       </div>
 
-      <p>Conteúdo da página da categoria aqui.</p>
-      <p>Search Params: {JSON.stringify(searchParams)}</p>
-
-      {/* Filtros e produtos */}
-      {/* <div className="flex flex-col md:flex-row gap-8"> */}
-        {/* Sidebar para Desktop */}
-        {/* <div className="hidden md:block w-full md:w-64 flex-shrink-0">
+      <div className="flex flex-col md:flex-row gap-8">
+        <div className="hidden md:block w-full md:w-64 flex-shrink-0">
           <FiltersSidebarContent
             collections={allCollections}
             currentCategoryHandle={category}
           />
-        </div> */}
+        </div>
 
-        {/* Lista de produtos */}
-        {/* <div className="flex-grow"> */}
-          {/* Controles: Botão de Filtros (Mobile) e Select de Ordenação */}
-          {/* <div className="flex flex-row md:flex-col items-center gap-4 mb-6"> 
-            <div className="flex flex-row w-full items-center gap-4 md:justify-end md:border-b md:pb-4"> 
+        <div className="flex-grow">
+          <div className="flex flex-row md:flex-col items-center gap-4 mb-6">
+            <div className="flex flex-row w-full items-center gap-4 md:justify-end md:border-b md:pb-4">
               <div className="w-1/2 md:hidden">
                 <Sheet>
                   <SheetTrigger asChild>
@@ -154,12 +137,11 @@ export default function CategoryPage(props: MyPageProps) { // Removido async
                 </select>
               </div>
             </div>
-          </div> */}
+          </div>
 
-          {/* Grid de produtos */}
-          {/* {products.length > 0 ? (
+          {products.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6"> 
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -206,9 +188,9 @@ export default function CategoryPage(props: MyPageProps) { // Removido async
                 Ver todos os produtos
               </Link>
             </div>
-          )} */}
-        {/* </div> */}
-      {/* </div> */}
+          )}
+        </div>
+      </div>
     </div>
   );
 }
