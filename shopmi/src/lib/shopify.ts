@@ -1,14 +1,34 @@
 import { ApolloClient, InMemoryCache, createHttpLink, gql } from '@apollo/client';
 
 // Interfaces para tipagem
+export interface PageInfo {
+  hasNextPage: boolean;
+  endCursor?: string | null;
+  hasPreviousPage?: boolean;
+  startCursor?: string | null;
+}
+
+export interface ProductsConnection {
+  edges: {
+    node: Product;
+  }[];
+  pageInfo: PageInfo;
+  // totalCount não é diretamente suportado pela Storefront API para products connection
+  // para fins de performance. O total de produtos/páginas precisará ser gerenciado
+  // de forma diferente se um contador exato for necessário para a UI de paginação.
+  // Para a paginação da Shadcn, geralmente precisamos saber o número total de páginas.
+  // Isso pode exigir uma query separada para contar todos os produtos ou uma estimativa.
+  // Por ora, focaremos em implementar a navegação "próxima página".
+}
+
 export interface Product {
   id: string;
   title: string;
   handle: string;
   description?: string;
   descriptionHtml?: string;
-  productType?: string; // Adicionado tipo do produto
-  tags?: string[]; // Adicionado tags
+  productType?: string;
+  tags?: string[];
   priceRange: {
     minVariantPrice: {
       amount: string;
@@ -70,7 +90,15 @@ export interface Collection {
     originalSrc: string;
     altText: string | null;
   } | null;
+  // Adicionando products connection para quando uma coleção é buscada com seus produtos paginados
+  products?: ProductsConnection;
 }
+
+// Interface para o retorno de getProductsByCollection
+export interface CollectionWithProductsPage extends Collection {
+  products: ProductsConnection;
+}
+
 
 // Tokens da API Shopify - usando variáveis de ambiente
 const SHOPIFY_STORE_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
@@ -172,10 +200,36 @@ export const storefrontClient = new ApolloClient({
 });
 
 // Funções para obter dados (Storefront API)
-export async function getProducts() {
+interface GetProductsParams {
+  first?: number;
+  after?: string | null;
+  last?: number;
+  before?: string | null;
+}
+
+export async function getProducts(params: GetProductsParams): Promise<ProductsConnection> {
+  const { first = 20, after = null, last = null, before = null } = params;
+
+  let queryArgsDefs = "";
+  let productArgs = "";
+
+  const variables: any = {};
+
+  if (last && before) {
+    queryArgsDefs = "$last: Int!, $before: String";
+    productArgs = "last: $last, before: $before";
+    variables.last = last;
+    variables.before = before;
+  } else {
+    queryArgsDefs = "$first: Int!, $after: String";
+    productArgs = "first: $first, after: $after";
+    variables.first = first;
+    if (after) variables.after = after; // 'after' é opcional para a primeira página
+  }
+
   const query = `
-    query GetProducts {
-      products(first: 250) {
+    query GetProducts(${queryArgsDefs}) {
+      products(${productArgs}) {
         edges {
           node {
             id
@@ -198,6 +252,12 @@ export async function getProducts() {
             }
           }
         }
+        pageInfo {
+          hasNextPage
+          endCursor
+          hasPreviousPage
+          startCursor
+        }
       }
     }
   `;
@@ -205,20 +265,52 @@ export async function getProducts() {
   try {
     const response = await storefrontClient.query({
       query: gql(query),
+      variables,
     });
-    
-    // Removido log da resposta da API
-    return response.data.products.edges.map((edge: { node: Product }) => edge.node);
-  } catch (error) {
-    console.error('Erro ao buscar produtos:', error); // Manter log de erro
-    // Retornar dados mockados em caso de erro
+    return response.data.products as ProductsConnection;
+  } catch (error)
+ {
+    console.error('Erro ao buscar produtos:', error);
     console.warn('Usando dados mockados para produtos devido a erro na API');
     const { mockProducts } = createMockData();
-    return mockProducts;
+    // Simulação de paginação para mock data
+    let paginatedMockProducts;
+    let hasNext = false;
+    let hasPrev = false;
+    let startIdx = 0;
+
+    if (after) { // Simula 'after'
+      const afterIdx = mockProducts.findIndex(p => p.id === after); // Supondo que 'after' é um ID para mock
+      if (afterIdx !== -1) startIdx = afterIdx + 1;
+      hasPrev = true;
+    } else if (before) { // Simula 'before'
+      const beforeIdx = mockProducts.findIndex(p => p.id === before);
+      if (beforeIdx !== -1) {
+        startIdx = Math.max(0, beforeIdx - (last || first));
+      }
+      hasNext = true;
+    }
+    
+    const itemsToTake = last || first;
+    paginatedMockProducts = mockProducts.slice(startIdx, startIdx + itemsToTake);
+    
+    if (!before) hasNext = (startIdx + itemsToTake) < mockProducts.length;
+    if (!after && startIdx > 0) hasPrev = true;
+
+
+    return {
+      edges: paginatedMockProducts.map(node => ({ node })),
+      pageInfo: {
+        hasNextPage: hasNext,
+        endCursor: paginatedMockProducts.length > 0 ? paginatedMockProducts[paginatedMockProducts.length - 1].id : null, // Usando ID como cursor mock
+        hasPreviousPage: hasPrev,
+        startCursor: paginatedMockProducts.length > 0 ? paginatedMockProducts[0].id : null, // Usando ID como cursor mock
+      },
+    };
   }
 }
 
-export async function getProductByHandle(handle: string) {
+export async function getProductByHandle(handle: string): Promise<Product | null> {
   const query = `
     query GetProductByHandle($handle: String!) {
       productByHandle(handle: $handle) {
@@ -343,13 +435,12 @@ export async function getProductByHandle(handle: string) {
     return response.data.productByHandle;
   } catch (error) {
     console.error('Erro ao buscar produto:', error);
-    // Retornar um produto mockado em caso de erro
     const { mockProducts } = createMockData();
     return mockProducts.find((p) => p.handle === handle) || null;
   }
 }
 
-export async function getCollections() {
+export async function getCollections(): Promise<Collection[]> {
   const query = `
     query GetCollections {
       collections(first: 250) {
@@ -378,19 +469,49 @@ export async function getCollections() {
     return response.data.collections.edges.map((edge: { node: Collection }) => edge.node);
   } catch (error) {
     console.error('Erro ao buscar coleções:', error); // Manter log de erro
-    // Retornar coleções mockadas em caso de erro
     console.warn('Usando dados mockados para coleções devido a erro na API');
     const { mockCollections } = createMockData();
     return mockCollections;
   }
 }
 
-export async function getProductsByCollection(collectionHandle: string) {
+interface GetProductsByCollectionParams extends GetProductsParams {
+  collectionHandle: string;
+}
+
+export async function getProductsByCollection(
+  params: GetProductsByCollectionParams
+): Promise<CollectionWithProductsPage | null> {
+  const { collectionHandle, first = 20, after = null, last = null, before = null } = params;
+
+  let queryArgsDefs = "$handle: String!, ";
+  let productArgs = "";
+  const variables: any = { handle: collectionHandle };
+
+  if (last && before) {
+    queryArgsDefs += "$last: Int!, $before: String";
+    productArgs = "last: $last, before: $before";
+    variables.last = last;
+    variables.before = before;
+  } else {
+    queryArgsDefs += "$first: Int!, $after: String";
+    productArgs = "first: $first, after: $after";
+    variables.first = first;
+    if (after) variables.after = after;
+  }
+
   const query = `
-    query GetProductsByCollection($handle: String!) {
+    query GetProductsByCollection(${queryArgsDefs}) {
       collectionByHandle(handle: $handle) {
+        id
         title
-        products(first: 20) {
+        handle
+        description
+        image {
+          originalSrc
+          altText
+        }
+        products(${productArgs}) {
           edges {
             node {
               id
@@ -413,6 +534,12 @@ export async function getProductsByCollection(collectionHandle: string) {
               }
             }
           }
+          pageInfo {
+            hasNextPage
+            endCursor
+            hasPreviousPage
+            startCursor
+          }
         }
       }
     }
@@ -421,41 +548,85 @@ export async function getProductsByCollection(collectionHandle: string) {
   try {
     const response = await storefrontClient.query({
       query: gql(query),
-      variables: { handle: collectionHandle },
+      variables,
     });
     
-    // Verificar se collectionByHandle existe antes de acessar suas propriedades
     if (response.data.collectionByHandle) {
-      return {
-        title: response.data.collectionByHandle.title,
-        products: response.data.collectionByHandle.products.edges.map((edge: { node: Product }) => edge.node),
-      };
+      return response.data.collectionByHandle as CollectionWithProductsPage;
     } else {
-      console.error('Coleção não encontrada');
-      // Retornar dados mockados em caso de coleção não encontrada
-      const { mockProducts, mockCollections } = createMockData();
-      const collection = mockCollections.find((c) => c.handle === collectionHandle);
-      return {
-        title: collection?.title || '',
-        products: mockProducts
-      };
+      console.error(`Coleção não encontrada: ${collectionHandle}`);
+      return null; // Retorna null se a coleção não for encontrada
     }
   } catch (error) {
-    console.error('Erro ao buscar produtos da coleção:', error);
-    // Retornar dados mockados em caso de erro
+    console.error(`Erro ao buscar produtos da coleção ${collectionHandle}:`, error);
+    console.warn(`Usando dados mockados para a coleção ${collectionHandle} devido a erro na API`);
     const { mockProducts, mockCollections } = createMockData();
-    const collection = mockCollections.find((c) => c.handle === collectionHandle);
-    return {
-      title: collection?.title || '',
-      products: mockProducts
-    };
+    const collectionMock = mockCollections.find((c) => c.handle === collectionHandle);
+    if (collectionMock) {
+      // Simulação de paginação para mock data
+      let paginatedMockProducts;
+      let hasNext = false;
+      let hasPrev = false;
+      let startIdx = 0;
+      const itemsToTake = last || first;
+
+      if (after) {
+        const afterIdx = mockProducts.findIndex(p => p.id === after);
+        if (afterIdx !== -1) startIdx = afterIdx + 1;
+        hasPrev = true;
+      } else if (before) {
+        const beforeIdx = mockProducts.findIndex(p => p.id === before);
+        if (beforeIdx !== -1) startIdx = Math.max(0, beforeIdx - itemsToTake);
+        hasNext = true;
+      }
+      
+      paginatedMockProducts = mockProducts.slice(startIdx, startIdx + itemsToTake);
+      if (!before) hasNext = (startIdx + itemsToTake) < mockProducts.length;
+      if (!after && startIdx > 0) hasPrev = true;
+
+      return {
+        ...collectionMock,
+        products: {
+          edges: paginatedMockProducts.map(node => ({ node })),
+          pageInfo: {
+            hasNextPage: hasNext,
+            endCursor: paginatedMockProducts.length > 0 ? paginatedMockProducts[paginatedMockProducts.length - 1].id : null,
+            hasPreviousPage: hasPrev,
+            startCursor: paginatedMockProducts.length > 0 ? paginatedMockProducts[0].id : null,
+          },
+        },
+      };
+    }
+    return null;
   }
 }
 
-export async function searchProducts(query: string) {
+interface SearchProductsParams extends GetProductsParams {
+  queryText: string;
+}
+
+export async function searchProducts(params: SearchProductsParams): Promise<ProductsConnection> {
+  const { queryText, first = 20, after = null, last = null, before = null } = params;
+
+  let queryArgsDefs = "$queryText: String!, ";
+  let productArgs = "query: $queryText, ";
+  const variables: any = { queryText };
+
+  if (last && before) {
+    queryArgsDefs += "$last: Int!, $before: String";
+    productArgs += "last: $last, before: $before";
+    variables.last = last;
+    variables.before = before;
+  } else {
+    queryArgsDefs += "$first: Int!, $after: String";
+    productArgs += "first: $first, after: $after";
+    variables.first = first;
+    if (after) variables.after = after;
+  }
+
   const gqlQuery = `
-    query SearchProducts($query: String!) {
-      products(first: 20, query: $query) {
+    query SearchProducts(${queryArgsDefs}) {
+      products(${productArgs}) {
         edges {
           node {
             id
@@ -478,6 +649,12 @@ export async function searchProducts(query: string) {
             }
           }
         }
+        pageInfo {
+          hasNextPage
+          endCursor
+          hasPreviousPage
+          startCursor
+        }
       }
     }
   `;
@@ -485,18 +662,48 @@ export async function searchProducts(query: string) {
   try {
     const response = await storefrontClient.query({
       query: gql(gqlQuery),
-      variables: { query },
+      variables,
     });
-    return response.data.products.edges.map((edge: { node: Product }) => edge.node);
+    return response.data.products as ProductsConnection;
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
-    // Retornar produtos mockados filtrados pelo termo de busca
     const { mockProducts } = createMockData();
-    return mockProducts.filter(
+    // Simulação de paginação para mock data
+    const filtered = mockProducts.filter(
       (product) =>
-        product.title.toLowerCase().includes(query.toLowerCase()) ||
-        product.description.toLowerCase().includes(query.toLowerCase())
+        product.title.toLowerCase().includes(queryText.toLowerCase()) ||
+        (product.description && product.description.toLowerCase().includes(queryText.toLowerCase()))
     );
+    
+    let paginatedMockProducts;
+    let hasNext = false;
+    let hasPrev = false;
+    let startIdx = 0;
+    const itemsToTake = last || first;
+
+    if (after) {
+      const afterIdx = filtered.findIndex(p => p.id === after);
+      if (afterIdx !== -1) startIdx = afterIdx + 1;
+      hasPrev = true;
+    } else if (before) {
+      const beforeIdx = filtered.findIndex(p => p.id === before);
+      if (beforeIdx !== -1) startIdx = Math.max(0, beforeIdx - itemsToTake);
+      hasNext = true;
+    }
+    
+    paginatedMockProducts = filtered.slice(startIdx, startIdx + itemsToTake);
+    if (!before) hasNext = (startIdx + itemsToTake) < filtered.length;
+    if (!after && startIdx > 0) hasPrev = true;
+    
+    return {
+      edges: paginatedMockProducts.map(node => ({ node })),
+      pageInfo: {
+        hasNextPage: hasNext,
+        endCursor: paginatedMockProducts.length > 0 ? paginatedMockProducts[paginatedMockProducts.length - 1].id : null,
+        hasPreviousPage: hasPrev,
+        startCursor: paginatedMockProducts.length > 0 ? paginatedMockProducts[0].id : null,
+      },
+    };
   }
 }
 

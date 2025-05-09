@@ -1,21 +1,54 @@
 import React from 'react';
-import { getProductsByCollection, getCollections, Collection, Product } from '../../../lib/shopify';
+import { getProductsByCollection, getCollections, Collection, CollectionWithProductsPage } from '../../../lib/shopify';
 import ProductCard from '../../../components/product/ProductCard';
 import Link from 'next/link';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious, // Descomentado para usar
+  // PaginationLink,
+  // PaginationEllipsis,
+} from '../../../components/ui/pagination';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from '../../../components/ui/sheet';
+import FiltersSidebarContent from '../../../components/shop/FiltersSidebarContent';
+import { Button } from '../../../components/ui/button';
+import { FilterIcon } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 12;
 
 export default async function CategoryPage({
   params,
+  searchParams,
 }: {
-  params: Promise<{ category: string }>
+  params: { category: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  const { category } = await params;
-  
-  // Buscando produtos da categoria e todas as categorias
-  const categoryData = await getProductsByCollection(category);
-  const collections = await getCollections();
+  const { category } = params;
+  const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
+  const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
 
-  // Se a categoria não for encontrada
-  if (!categoryData.title) {
+  let productParams: any = { collectionHandle: category, first: ITEMS_PER_PAGE };
+  if (afterCursor) {
+    productParams.after = afterCursor;
+  } else if (beforeCursor) {
+    productParams = { collectionHandle: category, last: ITEMS_PER_PAGE, before: beforeCursor };
+    delete productParams.first;
+  }
+
+  const categoryData: CollectionWithProductsPage | null = await getProductsByCollection(productParams);
+  const allCollections: Collection[] = await getCollections();
+
+  // Se a categoria não for encontrada ou não houver dados
+  if (!categoryData) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold mb-4">Categoria não encontrada</h1>
@@ -29,6 +62,9 @@ export default async function CategoryPage({
       </div>
     );
   }
+
+  const products = categoryData.products.edges.map(edge => edge.node);
+  const pageInfo = categoryData.products.pageInfo;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -49,98 +85,105 @@ export default async function CategoryPage({
 
       {/* Filtros e produtos */}
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar com filtros */}
-        <div className="w-full md:w-64 flex-shrink-0">
-          {/* Categorias */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Categorias</h2>
-            <ul className="space-y-2">
-              {collections.map((collection: Collection) => (
-                <li key={collection.id}>
-                  <Link
-                    href={`/shop/${collection.handle}`}
-                    className={`transition-colors ${
-                      collection.handle === category
-                        ? 'text-[#FF6700] font-medium'
-                        : 'text-gray-600 hover:text-[#FF6700]'
-                    }`}
-                  >
-                    {collection.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Filtro de preço */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Preço</h2>
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input type="checkbox" className="form-checkbox h-4 w-4 text-[#FF6700]" />
-                <span className="ml-2 text-gray-600">Até R$500</span>
-              </label>
-              <label className="flex items-center">
-                <input type="checkbox" className="form-checkbox h-4 w-4 text-[#FF6700]" />
-                <span className="ml-2 text-gray-600">R$500 - R$1000</span>
-              </label>
-              <label className="flex items-center">
-                <input type="checkbox" className="form-checkbox h-4 w-4 text-[#FF6700]" />
-                <span className="ml-2 text-gray-600">R$1000 - R$2000</span>
-              </label>
-              <label className="flex items-center">
-                <input type="checkbox" className="form-checkbox h-4 w-4 text-[#FF6700]" />
-                <span className="ml-2 text-gray-600">Acima de R$2000</span>
-              </label>
-            </div>
-          </div>
+        {/* Sidebar para Desktop */}
+        <div className="hidden md:block w-full md:w-64 flex-shrink-0">
+          <FiltersSidebarContent
+            collections={allCollections}
+            currentCategoryHandle={category}
+          />
         </div>
 
         {/* Lista de produtos */}
         <div className="flex-grow">
-          {/* Cabeçalho com contagem e ordenação */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b">
-            <p className="text-gray-600 mb-4 sm:mb-0">
-              Mostrando <span className="font-medium">{categoryData.products.length}</span> produtos
-            </p>
-            <div className="flex items-center">
-              <label htmlFor="sort" className="mr-2 text-gray-600">
-                Ordenar por:
-              </label>
-              <select
-                id="sort"
-                className="border rounded-md py-1 px-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6700] focus:border-transparent"
-              >
-                <option value="featured">Em destaque</option>
-                <option value="price-asc">Preço: Menor para maior</option>
-                <option value="price-desc">Preço: Maior para menor</option>
-                <option value="name-asc">Nome: A-Z</option>
-                <option value="name-desc">Nome: Z-A</option>
-              </select>
+          {/* Controles: Botão de Filtros (Mobile) e Select de Ordenação */}
+          <div className="flex flex-row md:flex-col items-center gap-4 mb-6"> {/* Container principal dos controles */}
+            <div className="flex flex-row w-full items-center gap-4 md:justify-end md:border-b md:pb-4"> {/* Wrapper para layout mobile e desktop */}
+              {/* Botão de Filtros para Mobile (SheetTrigger) */}
+              <div className="w-1/2 md:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="w-full flex items-center justify-center gap-2 py-2 px-3">
+                      <FilterIcon size={18} />
+                      Filtros
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[300px] sm:w-[400px] p-6 overflow-y-auto">
+                    <SheetHeader className="mb-4">
+                      <SheetTitle>Filtros e Categorias</SheetTitle>
+                    </SheetHeader>
+                    <FiltersSidebarContent
+                      collections={allCollections}
+                      currentCategoryHandle={category}
+                    />
+                    <SheetClose asChild>
+                      <Button variant="outline" className="mt-4 w-full">Fechar</Button>
+                    </SheetClose>
+                  </SheetContent>
+                </Sheet>
+              </div>
+
+              {/* Select de Ordenação */}
+              <div className="flex items-center w-1/2 md:w-auto">
+                <label htmlFor="sort" className="sr-only md:not-sr-only md:mr-2 text-gray-600">
+                  Ordenar por:
+                </label>
+                <select
+                  id="sort"
+                  className="border rounded-md py-2 px-3 text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6700] focus:border-transparent w-full"
+                >
+                  <option value="featured">Em destaque</option>
+                  <option value="price-asc">Preço: Menor para maior</option>
+                  <option value="price-desc">Preço: Maior para menor</option>
+                  <option value="name-asc">Nome: A-Z</option>
+                  <option value="name-desc">Nome: Z-A</option>
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Grid de produtos */}
-          {categoryData.products.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {categoryData.products.map((product: Product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  title={product.title}
-                  handle={product.handle}
-                  description={product.description || ""}
-                  price={{
-                    amount: product.priceRange.minVariantPrice.amount,
-                    currencyCode: product.priceRange.minVariantPrice.currencyCode,
-                  }}
-                  image={{
-                    src: product.images.edges[0]?.node.originalSrc || "",
-                    alt: product.images.edges[0]?.node.altText || product.title,
-                  }}
-                />
-              ))}
-            </div>
+          {products.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6"> {/* Alterado de grid-cols-1 sm:grid-cols-2 para grid-cols-2 */}
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    title={product.title}
+                    handle={product.handle}
+                    description={product.description || ""}
+                    price={{
+                      amount: product.priceRange.minVariantPrice.amount,
+                      currencyCode: product.priceRange.minVariantPrice.currencyCode,
+                    }}
+                    image={{
+                      src: product.images.edges[0]?.node.originalSrc || "",
+                      alt: product.images.edges[0]?.node.altText || product.title,
+                    }}
+                  />
+                ))}
+              </div>
+              {/* Componente de Paginação */}
+              <div className="mt-12 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    {pageInfo.hasPreviousPage && pageInfo.startCursor && (
+                      <PaginationItem>
+                        <PaginationPrevious href={`/shop/${category}?before=${pageInfo.startCursor}`} />
+                      </PaginationItem>
+                    )}
+
+                    {/* Lógica para números de página (1, 2, 3...) - Requer totalCount */}
+                    
+                    {pageInfo.hasNextPage && pageInfo.endCursor && (
+                      <PaginationItem>
+                        <PaginationNext href={`/shop/${category}?after=${pageInfo.endCursor}`} />
+                      </PaginationItem>
+                    )}
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </>
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">Nenhum produto encontrado nesta categoria.</p>

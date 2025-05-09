@@ -6,7 +6,7 @@ import AddToCartButton from '@/components/product/AddToCartButton';
 import ShippingCalculator from '@/components/shipping/ShippingCalculator'; // Importar o novo componente
 import IsolatedHtmlContentTest from '@/components/product/IsolatedHtmlContentTest';
 import ProductGallery from '@/components/product/ProductGallery';
-import Accordion from '@/components/ui/Accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'; // Importar como nomeado e adicionar subcomponentes
 import { Button } from "@/components/ui/button"; // Importar Button do Shadcn
 import {
   DropdownMenu,
@@ -632,19 +632,24 @@ export default function ProductClientDetails({
         {/* Acordeon para Especificações Técnicas */}
         {product.metafields && product.metafields.length > 0 && (
           <div className="w-full mb-8">
-            <Accordion title="Especificações">
-              <div className="space-y-2">
-                {product.metafields
-                  .filter((mf): mf is Metafield => !!(mf && mf.namespace === 'custom' && mf.value)) // Type guard
-                  .map((metafield) => (
-                    <div key={metafield.key} className="flex text-sm">
-                      <span className="font-medium w-1/3">
-                        {formatMetafieldKey(metafield.key)}:
-                      </span>
-                      <span className="text-gray-700 w-2/3">{metafield.value}</span>
-                    </div>
-                  ))}
-              </div>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="specifications">
+                <AccordionTrigger className="text-xl font-semibold hover:no-underline">Especificações</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-2 pt-2">
+                    {product.metafields
+                      .filter((mf): mf is Metafield => !!(mf && mf.namespace === 'custom' && mf.value)) // Type guard
+                      .map((metafield) => (
+                        <div key={metafield.key} className="flex text-sm">
+                          <span className="font-medium w-1/3">
+                            {formatMetafieldKey(metafield.key)}:
+                          </span>
+                          <span className="text-gray-700 w-2/3">{metafield.value}</span>
+                        </div>
+                      ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             </Accordion>
           </div>
         )}

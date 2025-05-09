@@ -45,8 +45,9 @@ interface CartContextType {
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
-  isCartOpen: boolean;
-  toggleCart: () => void;
+  isCartSheetOpen: boolean; // Renomeado
+  setCartSheetOpen: (isOpen: boolean) => void; // Nova função para controle explícito
+  toggleCartSheet: () => void; // Renomeado
   totalItems: number;
   totalPrice: number;
   selectedShipping: ShippingOption | null;
@@ -73,7 +74,7 @@ interface CartProviderProps {
 export function CartProvider({ children }: CartProviderProps) {
   // Estado para o carrinho
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCartSheetOpen, setCartSheetOpen] = useState(false); // Renomeado e função de set direta
   const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
 
   // Carregar carrinho do localStorage ao iniciar
@@ -114,8 +115,8 @@ export function CartProvider({ children }: CartProviderProps) {
       }
     });
     
-    // Abrir o carrinho quando um item é adicionado
-    setIsCartOpen(true);
+    // Abrir o carrinho (Sheet) quando um item é adicionado
+    setCartSheetOpen(true);
   };
 
   // Remover item do carrinho
@@ -142,9 +143,9 @@ export function CartProvider({ children }: CartProviderProps) {
     setCart([]);
   };
 
-  // Alternar visibilidade do carrinho
-  const toggleCart = () => {
-    setIsCartOpen((prev) => !prev);
+  // Alternar visibilidade do carrinho (Sheet)
+  const toggleCartSheet = () => {
+    setCartSheetOpen((prev) => !prev);
   };
 
   // Calcular total de itens
@@ -163,8 +164,9 @@ export function CartProvider({ children }: CartProviderProps) {
     removeFromCart,
     updateQuantity,
     clearCart,
-    isCartOpen,
-    toggleCart,
+    isCartSheetOpen, // Renomeado
+    setCartSheetOpen, // Adicionado
+    toggleCartSheet, // Renomeado
     totalItems,
     totalPrice,
     selectedShipping,

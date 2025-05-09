@@ -277,54 +277,92 @@ export const adminOperations = {
 
       // Filtrar e mapear as coleções
       const allEdges = response.data.collections.edges;
-      // TODO: Definir tipos mais precisos para 'edge' e 'node' da API do Shopify
-      const filteredAndMappedCollections = allEdges
-        .filter((edge: unknown) => { // Filtrar primeiro - Usando unknown
-          // Type guard para edge e node
-          if (edge && typeof edge === 'object' && 'node' in edge && edge.node && typeof edge.node === 'object') {
-            const node = edge.node as { mainCollectionMetafield?: { value?: string | boolean } }; // Type assertion
-            // Incluir apenas se mainCollectionMetafield existir e seu valor for 'true'
-            return node.mainCollectionMetafield && (node.mainCollectionMetafield.value === 'true' || node.mainCollectionMetafield.value === true);
-          }
-          return false;
-        })
-        .map((edge: unknown) => { // Mapear depois - Usando unknown
-           // Type guard para edge e node
-           if (!(edge && typeof edge === 'object' && 'node' in edge && edge.node && typeof edge.node === 'object')) {
-             return null; // Ou alguma outra forma de tratamento de erro/valor padrão
-           }
-           const node = edge.node as { title?: string, subcollectionsMetafield?: { value?: string }, [key: string]: unknown }; // Alterado para unknown
-           let subcollections = [];
+      const allNodes = allEdges.map((edge: { node: any }) => edge.node);
 
-          if (node.subcollectionsMetafield && node.subcollectionsMetafield.value) {
-            try {
-              const parsedSubcollections = JSON.parse(node.subcollectionsMetafield.value);
-              if (Array.isArray(parsedSubcollections)) {
-                subcollections = parsedSubcollections.filter(sub => sub && sub.id);
+      // Coletar todos os GIDs de subcoleções únicas
+      const subcollectionGids = new Set<string>();
+      allNodes.forEach((node: { subcollectionsMetafield?: { value?: string } }) => {
+        if (node.subcollectionsMetafield && node.subcollectionsMetafield.value) {
+          try {
+            const parsedGids: string[] = JSON.parse(node.subcollectionsMetafield.value);
+            if (Array.isArray(parsedGids)) {
+              parsedGids.forEach(gid => {
+                if (typeof gid === 'string' && gid.startsWith('gid://shopify/Collection/')) {
+                  subcollectionGids.add(gid);
+                }
+              });
+            }
+          } catch (e) {
+            // console.error(`Erro ao fazer parse do metafield subcollections para ${node.title}:`, e);
+          }
+        }
+      });
+
+      let subcollectionDetailsMap = new Map();
+      if (subcollectionGids.size > 0) {
+        const subcollectionIdsArray = Array.from(subcollectionGids);
+        // Query para buscar detalhes das subcoleções por IDs
+        const SUBCOLLECTIONS_DETAILS_QUERY = gql`
+          query getNodes($ids: [ID!]!) {
+            nodes(ids: $ids) {
+              ... on Collection {
+                id
+                title
+                handle
+                image {
+                  src
+                  altText
+                }
               }
-            } catch (e) {
-              console.error(`Erro ao fazer parse ou filtrar o metafield subcollections para ${node.title}:`, e);
-              subcollections = [];
             }
           }
+        `;
+        const subDetailsResponse = await adminClient.query({
+          query: SUBCOLLECTIONS_DETAILS_QUERY,
+          variables: { ids: subcollectionIdsArray },
+        });
 
-          // Remover os metafields extras do objeto final para limpeza
-          // Remover os metafields extras do objeto final para limpeza
-          // Adicionando eslint-disable para as variáveis não utilizadas na desestruturação
+        if (subDetailsResponse.data && subDetailsResponse.data.nodes) {
+          subDetailsResponse.data.nodes.forEach((subNode: any) => {
+            if (subNode) { // Verificar se o nó não é null (caso um ID não seja encontrado)
+              subcollectionDetailsMap.set(subNode.id, subNode);
+            }
+          });
+        }
+      }
+
+      // Filtrar coleções principais e popular subcoleções
+      const collectionsWithSubcollections = allNodes
+        .filter((node: { mainCollectionMetafield?: { value?: string | boolean } }) => {
+          return node.mainCollectionMetafield && (node.mainCollectionMetafield.value === 'true' || node.mainCollectionMetafield.value === true);
+        })
+        .map((node: { id: string, title?: string, subcollectionsMetafield?: { value?: string }, [key: string]: unknown }) => {
+          let populatedSubcollections = [];
+          if (node.subcollectionsMetafield && node.subcollectionsMetafield.value) {
+            try {
+              const subGids: string[] = JSON.parse(node.subcollectionsMetafield.value);
+              if (Array.isArray(subGids)) {
+                populatedSubcollections = subGids
+                  .map(gid => subcollectionDetailsMap.get(gid))
+                  .filter(Boolean); // Remove undefined/null se alguma subcoleção não foi encontrada
+              }
+            } catch (e) {
+              // console.error(`Erro ao processar subcoleções para ${node.title}:`, e);
+            }
+          }
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { subcollectionsMetafield: _subcollectionsMetafield, mainCollectionMetafield: _mainCollectionMetafield, ...restOfNode } = node;
-
+          const { subcollectionsMetafield: _sm, mainCollectionMetafield: _mm, ...restOfNode } = node;
           return {
             ...restOfNode,
-            subcollections
+            subcollections: populatedSubcollections,
           };
         });
 
-      console.log("Coleções filtradas para o menu:", filteredAndMappedCollections); // Log das coleções filtradas
-      return filteredAndMappedCollections;
+      console.log("Coleções com subcoleções populadas:", JSON.stringify(collectionsWithSubcollections, null, 2));
+      return collectionsWithSubcollections;
 
     } catch (error) {
-      console.error('Erro ao buscar e filtrar coleções:', error);
+      console.error('Erro ao buscar e processar coleções com subcoleções:', error);
       throw error; // Re-lançar o erro para a API route tratar
     }
   },

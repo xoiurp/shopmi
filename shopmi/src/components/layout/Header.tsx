@@ -9,7 +9,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../context/CartContext';
-import CartDrawer from '../cart/CartDrawer';
+import CartDrawerContent from '../cart/CartDrawer'; // Alterado nome e não recebe props
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -20,6 +20,20 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { ListItem } from "@/components/ui/list-item";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"; // Mantido como minúsculo, pois o shadcn-ui cria o arquivo assim.
 
 interface Collection {
   id: string; // Mudar para string, pois o ID do Shopify é gid://...
@@ -52,8 +66,7 @@ interface Product {
 
 const Header = () => {
   const router = useRouter();
-  const { totalItems, toggleCart, isCartOpen } = useCart();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { totalItems, isCartSheetOpen, setCartSheetOpen } = useCart(); // Adicionado isCartSheetOpen, setCartSheetOpen
   const [searchTerm, setSearchTerm] = useState('');
   // const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null); // Removido - não utilizado
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -130,10 +143,9 @@ const Header = () => {
     }
   };
 
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+  // const toggleMenu = () => { // Removido - Sheet gerencia seu estado
+  //   setIsMenuOpen(!isMenuOpen);
+  // };
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -445,148 +457,204 @@ const Header = () => {
                 </div>
               </Link>
 
-              {/* Ícone do Carrinho */}
-              <button
-                onClick={toggleCart}
-                className="text-gray-600 hover:text-[#FF6700] relative"
-                aria-label="Carrinho"
-              >
-                <div className="relative p-1 border border-gray-200 rounded-md hover:border-[#FF6700] transition-colors duration-200">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-5 w-5"
-                  >
-                    <circle cx="9" cy="21" r="1"></circle>
-                    <circle cx="20" cy="21" r="1"></circle>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                  </svg>
-                  {totalItems > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-[#FF6700] text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                      {totalItems}
-                    </span>
-                  )}
-                </div>
-              </button>
-
-              {/* Botão de menu para mobile */}
-              <button
-                onClick={toggleMenu}
-                className="md:hidden text-gray-600 hover:text-[#FF6700]"
-                aria-label="Menu"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Menu mobile usando shadcnui */}
-          {isMenuOpen && (
-            <div className="md:hidden mt-4 pb-4">
-              {/* Barra de busca para mobile */}
-              <div className="mb-4">
-                <form onSubmit={handleSearch} className="relative w-full">
-                  <input
-                    type="text"
-                    placeholder="Buscar produtos..."
-                    className="w-full py-2 pl-4 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6700] focus:border-transparent"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+              {/* Ícone do Carrinho com SheetTrigger */}
+              <Sheet open={isCartSheetOpen} onOpenChange={setCartSheetOpen}>
+                <SheetTrigger asChild>
                   <button
-                    type="submit"
-                    className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-[#FF6700]"
+                    className="text-gray-600 hover:text-[#FF6700] relative"
+                    aria-label="Carrinho"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
+                    <div className="relative p-1 border border-gray-200 rounded-md hover:border-[#FF6700] transition-colors duration-200">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
+                        className="h-5 w-5"
+                      >
+                        <circle cx="9" cy="21" r="1"></circle>
+                        <circle cx="20" cy="21" r="1"></circle>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                      </svg>
+                      {totalItems > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-[#FF6700] text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                          {totalItems}
+                        </span>
+                      )}
+                    </div>
                   </button>
-                </form>
+                </SheetTrigger>
+                <SheetContent className="w-full md:max-w-md p-0 flex flex-col" side="right">
+                  {/* O botão X padrão do SheetContent/DialogContent fica no canto superior direito do SheetContent.
+                      Este novo div para o cabeçalho ficará abaixo dele.
+                      Adicionamos pt-6 ou pt-8 ao p-4 para dar espaço ao X que fica acima.
+                  */}
+                  <div className="p-4 pt-8 border-b"> {/* Aumentado padding superior para o X */}
+                    <SheetTitle className="text-center text-xl font-semibold mb-1">Meu Carrinho ({totalItems})</SheetTitle>
+                    <div className="text-center"> {/* Ou text-right se preferir */}
+                      <Link href="/cart" className="text-sm text-gray-600 hover:text-[#FF6700] hover:underline">
+                        Ver Todos
+                      </Link>
+                    </div>
+                  </div>
+                  <CartDrawerContent /> {/* CartDrawerContent já tem seu próprio padding e scroll para seu conteúdo */}
+                </SheetContent>
+              </Sheet>
+
+              {/* Botão de menu para mobile com Sheet */}
+              <div className="md:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button
+                      className="text-gray-600 hover:text-[#FF6700]"
+                      aria-label="Menu"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 12h16M4 18h16"
+                        />
+                      </svg>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-4/5 max-w-sm p-0"> {/* Ajuste de padding e largura */}
+                    <SheetHeader className="p-4 border-b"> {/* Adicionado padding e borda */}
+                      <SheetTitle>
+                        <Link href="/" className="flex items-center">
+                          <Image
+                            src="/mibrasil2svg.svg"
+                            alt="Mi Brasil Logo"
+                            width={35}
+                            height={30}
+                            priority
+                          />
+                           <span className="ml-2 text-lg font-semibold">Mi Brasil</span>
+                        </Link>
+                      </SheetTitle>
+                      {/* O SheetContent já fornece um botão de fechar padrão, então o SheetClose explícito foi removido daqui */}
+                    </SheetHeader>
+                    <div className="p-4"> {/* Adicionado padding ao conteúdo */}
+                      {/* Barra de busca para mobile */}
+                      <div className="mb-6"> {/* Aumentado margin-bottom */}
+                        <form onSubmit={handleSearch} className="relative w-full">
+                          <input
+                            type="text"
+                            placeholder="Buscar produtos..."
+                            className="w-full py-2 pl-4 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6700] focus:border-transparent"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                          <button
+                            type="submit"
+                            className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-[#FF6700]"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                              />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+
+                      <nav className="space-y-1">
+                        <SheetClose asChild>
+                          <Link href="/" className="flex items-center p-2 -mx-2 rounded-md hover:bg-gray-100 text-gray-700 hover:text-[#FF6700]">
+                            Início
+                          </Link>
+                        </SheetClose>
+
+                        {/* Mapear coleções para Accordion ou Link direto */}
+                        {collections && collections.length > 0 && (
+                          <Accordion type="multiple" className="w-full">
+                            {collections.map((collection) =>
+                              collection.subcollections && collection.subcollections.length > 0 ? (
+                                <AccordionItem value={collection.id} key={collection.id} className="border-b-0">
+                                  <AccordionTrigger className="flex items-center p-2 -mx-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-[#FF6700] hover:no-underline justify-between w-full">
+                                    {collection.title}
+                                  </AccordionTrigger>
+                                  <AccordionContent className="pt-1 pb-0 pl-4"> {/* Ajuste de padding */}
+                                    <ul className="space-y-1">
+                                      <li>
+                                        <SheetClose asChild>
+                                          <Link href={`/shop/${collection.handle}`} className="flex items-center p-1.5 -mx-1 rounded-md hover:bg-gray-100 text-sm text-gray-600 hover:text-[#FF6700]">
+                                            Ver Tudo em {collection.title}
+                                          </Link>
+                                        </SheetClose>
+                                      </li>
+                                      {collection.subcollections.map((sub) => (
+                                        <li key={sub.id}>
+                                          <SheetClose asChild>
+                                            <Link href={`/shop/${collection.handle}/${sub.handle}`} className="flex items-center p-1.5 -mx-1 rounded-md hover:bg-gray-100 text-sm text-gray-600 hover:text-[#FF6700]">
+                                              {sub.title}
+                                            </Link>
+                                          </SheetClose>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ) : (
+                                <SheetClose asChild key={collection.id}>
+                                  <Link href={`/shop/${collection.handle}`} className="flex items-center p-2 -mx-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-[#FF6700] w-full">
+                                    {collection.title}
+                                  </Link>
+                                </SheetClose>
+                              )
+                            )}
+                          </Accordion>
+                        )}
+                        {/* Fim do mapeamento de coleções */}
+
+                        <hr className="my-4" />
+                        <SheetClose asChild>
+                           <Link href="/account" className="flex items-center p-2 -mx-2 rounded-md hover:bg-gray-100 text-gray-700 hover:text-[#FF6700]">
+                            Minha Conta
+                          </Link>
+                        </SheetClose>
+                         <SheetClose asChild>
+                           <Link href="/auth/login" className="flex items-center p-2 -mx-2 rounded-md hover:bg-gray-100 text-gray-700 hover:text-[#FF6700]">
+                            Entrar
+                          </Link>
+                        </SheetClose>
+                         <SheetClose asChild>
+                           <Link href="/auth/register" className="flex items-center p-2 -mx-2 rounded-md hover:bg-gray-100 text-gray-700 hover:text-[#FF6700]">
+                            Cadastrar
+                          </Link>
+                        </SheetClose>
+                      </nav>
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
-
-              <nav className="space-y-3">
-                <NavigationMenu orientation="vertical" className="w-full">
-                  <NavigationMenuList className="flex-col space-y-2">
-                    <NavigationMenuItem>
-                      <Link href="/" legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          Início
-                        </NavigationMenuLink>
-                      </Link>
-                    </NavigationMenuItem>
-
-                    <NavigationMenuItem>
-                      <Link href="/shop" legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          Loja
-                        </NavigationMenuLink>
-                      </Link>
-                    </NavigationMenuItem>
-
-                    <NavigationMenuItem>
-                      <Link href="/shop/smartphones" legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          Smartphones
-                        </NavigationMenuLink>
-                      </Link>
-                    </NavigationMenuItem>
-
-                    <NavigationMenuItem>
-                      <Link href="/shop/acessorios" legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          Acessórios
-                        </NavigationMenuLink>
-                      </Link>
-                    </NavigationMenuItem>
-
-                    <NavigationMenuItem>
-                      <Link href="/shop/casa-inteligente" legacyBehavior passHref>
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          Casa Inteligente
-                        </NavigationMenuLink>
-                      </Link>
-                    </NavigationMenuItem>
-                  </NavigationMenuList>
-                </NavigationMenu>
-              </nav>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
       {/* O Mega Menu antigo foi substituído pelo Navigation Menu da shadcnui */}
 
-      {/* Drawer do Carrinho */}
-      <CartDrawer isOpen={isCartOpen} onClose={toggleCart} />
+      {/* Drawer do Carrinho antigo removido, agora é parte do Sheet acima */}
     </header>
   );
 };
