@@ -27,14 +27,17 @@ const ITEMS_PER_PAGE = 12;
 
 // Temporariamente simplificando a função para isolar o erro de tipo
 
-interface MyPageProps { // Renomeando para evitar qualquer conflito com um PageProps global
-  params: { category: string };
+interface MyPageProps {
+  params: Promise<any>; // Tentativa de diagnóstico extremo
   searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function CategoryPage(props: MyPageProps) { // Removido async, props tipadas como um todo
-  const { category } = props.params;
-  const searchParams = props.searchParams; // Acessando searchParams
+export default function CategoryPage(props: MyPageProps) { // Removido async
+  // Como params agora é uma Promise (para teste), não podemos desestruturar category diretamente
+  // Esta parte do código não funcionará em runtime, é apenas para teste de tipo no build
+  const category = "test-category"; // Valor placeholder
+  const searchParams = props.searchParams;
+  // const { category } = props.params; // Não funcionaria com params como Promise
   // const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
   // const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
 
