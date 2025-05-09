@@ -629,7 +629,7 @@ export default function ProductClientDetails({
           </div>
         </div>
 
-        {/* Acordeon para Especificações Técnicas */}
+        {/* Acordeon para Especificações Técnicsas */}
         {product.metafields && product.metafields.length > 0 && (
           <div className="w-full mb-8">
             <Accordion type="single" collapsible className="w-full">
