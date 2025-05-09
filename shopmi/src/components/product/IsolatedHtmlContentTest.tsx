@@ -343,7 +343,7 @@ const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [htmlContent, mobileHtmlContent, isMobile, mobileFooterHeight, desktopFooterHeight, preserveOriginalStyles, iframeRef, contentToUse]);
+  }, [htmlContent, mobileHtmlContent, isMobile, mobileFooterHeight, desktopFooterHeight, preserveOriginalStyles, iframeRef, contentToUse, fontSizeMetafield]);
 
   return (
     <iframe

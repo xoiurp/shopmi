@@ -277,6 +277,7 @@ export const adminOperations = {
 
       // Filtrar e mapear as coleções
       const allEdges = response.data.collections.edges;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const allNodes = allEdges.map((edge: { node: any }) => edge.node);
 
       // Coletar todos os GIDs de subcoleções únicas
@@ -292,13 +293,13 @@ export const adminOperations = {
                 }
               });
             }
-          } catch (e) {
-            // console.error(`Erro ao fazer parse do metafield subcollections para ${node.title}:`, e);
+          } catch {
+            // console.error(`Erro ao fazer parse do metafield subcollections para ${node.title}:`);
           }
         }
       });
 
-      let subcollectionDetailsMap = new Map();
+      const subcollectionDetailsMap = new Map();
       if (subcollectionGids.size > 0) {
         const subcollectionIdsArray = Array.from(subcollectionGids);
         // Query para buscar detalhes das subcoleções por IDs
@@ -323,6 +324,7 @@ export const adminOperations = {
         });
 
         if (subDetailsResponse.data && subDetailsResponse.data.nodes) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           subDetailsResponse.data.nodes.forEach((subNode: any) => {
             if (subNode) { // Verificar se o nó não é null (caso um ID não seja encontrado)
               subcollectionDetailsMap.set(subNode.id, subNode);
@@ -346,8 +348,8 @@ export const adminOperations = {
                   .map(gid => subcollectionDetailsMap.get(gid))
                   .filter(Boolean); // Remove undefined/null se alguma subcoleção não foi encontrada
               }
-            } catch (e) {
-              // console.error(`Erro ao processar subcoleções para ${node.title}:`, e);
+            } catch {
+              // console.error(`Erro ao processar subcoleções para ${node.title}:`);
             }
           }
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -437,7 +439,7 @@ export const adminOperations = {
       }
       // TODO: Definir tipo para 'edge'
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return response.data.collection.products.edges.map((edge: { node: any }) => edge.node); // Mantendo any aqui por simplicidade, desabilitando a regra
+      return response.data.collection.products.edges.map((edge: { node: any }) => edge.node); 
 
     } catch (error) {
        if (!(error instanceof Error && error.message.startsWith('Erro GraphQL:'))) {

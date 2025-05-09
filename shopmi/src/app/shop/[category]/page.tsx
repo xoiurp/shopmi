@@ -36,7 +36,16 @@ export default async function CategoryPage({
   const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
   const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
 
-  let productParams: any = { collectionHandle: category, first: ITEMS_PER_PAGE };
+  interface ProductsByCollectionRequestParams {
+    collectionHandle: string;
+    first?: number;
+    last?: number;
+    after?: string | null;
+    before?: string | null;
+    // Adicione aqui outros filtros se getProductsByCollection os suportar
+  }
+
+  let productParams: ProductsByCollectionRequestParams = { collectionHandle: category, first: ITEMS_PER_PAGE };
   if (afterCursor) {
     productParams.after = afterCursor;
   } else if (beforeCursor) {

@@ -6,10 +6,8 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
-  PaginationEllipsis,
 } from '../../components/ui/pagination';
 import {
   Sheet,
@@ -30,13 +28,18 @@ export default async function ShopPage({
 }: {
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  const after = typeof searchParams?.after === 'string' ? searchParams.after : undefined;
-  const before = typeof searchParams?.before === 'string' ? searchParams.before : undefined;
-
   const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
   const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
 
-  let productParams: any = { first: ITEMS_PER_PAGE };
+  interface ProductRequestParams {
+    first?: number;
+    last?: number;
+    after?: string | null;
+    before?: string | null;
+    // Adicione aqui outros filtros se getProducts os suportar, ex: sortKey, query
+  }
+
+  let productParams: ProductRequestParams = { first: ITEMS_PER_PAGE };
   if (afterCursor) {
     productParams.after = afterCursor;
   } else if (beforeCursor) {

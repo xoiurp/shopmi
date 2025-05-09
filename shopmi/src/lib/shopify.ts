@@ -200,6 +200,16 @@ export const storefrontClient = new ApolloClient({
 });
 
 // Funções para obter dados (Storefront API)
+interface GqlVariables {
+  first?: number;
+  after?: string | null;
+  last?: number;
+  before?: string | null;
+  handle?: string;
+  queryText?: string;
+  // Adicionar outros possíveis campos de variáveis aqui
+}
+
 interface GetProductsParams {
   first?: number;
   after?: string | null;
@@ -213,7 +223,7 @@ export async function getProducts(params: GetProductsParams): Promise<ProductsCo
   let queryArgsDefs = "";
   let productArgs = "";
 
-  const variables: any = {};
+  const variables: GqlVariables = {};
 
   if (last && before) {
     queryArgsDefs = "$last: Int!, $before: String";
@@ -274,7 +284,6 @@ export async function getProducts(params: GetProductsParams): Promise<ProductsCo
     console.warn('Usando dados mockados para produtos devido a erro na API');
     const { mockProducts } = createMockData();
     // Simulação de paginação para mock data
-    let paginatedMockProducts;
     let hasNext = false;
     let hasPrev = false;
     let startIdx = 0;
@@ -292,7 +301,7 @@ export async function getProducts(params: GetProductsParams): Promise<ProductsCo
     }
     
     const itemsToTake = last || first;
-    paginatedMockProducts = mockProducts.slice(startIdx, startIdx + itemsToTake);
+    const paginatedMockProducts = mockProducts.slice(startIdx, startIdx + itemsToTake);
     
     if (!before) hasNext = (startIdx + itemsToTake) < mockProducts.length;
     if (!after && startIdx > 0) hasPrev = true;
@@ -486,7 +495,7 @@ export async function getProductsByCollection(
 
   let queryArgsDefs = "$handle: String!, ";
   let productArgs = "";
-  const variables: any = { handle: collectionHandle };
+  const variables: GqlVariables = { handle: collectionHandle };
 
   if (last && before) {
     queryArgsDefs += "$last: Int!, $before: String";
@@ -564,7 +573,6 @@ export async function getProductsByCollection(
     const collectionMock = mockCollections.find((c) => c.handle === collectionHandle);
     if (collectionMock) {
       // Simulação de paginação para mock data
-      let paginatedMockProducts;
       let hasNext = false;
       let hasPrev = false;
       let startIdx = 0;
@@ -580,7 +588,7 @@ export async function getProductsByCollection(
         hasNext = true;
       }
       
-      paginatedMockProducts = mockProducts.slice(startIdx, startIdx + itemsToTake);
+      const paginatedMockProducts = mockProducts.slice(startIdx, startIdx + itemsToTake);
       if (!before) hasNext = (startIdx + itemsToTake) < mockProducts.length;
       if (!after && startIdx > 0) hasPrev = true;
 
@@ -610,7 +618,7 @@ export async function searchProducts(params: SearchProductsParams): Promise<Prod
 
   let queryArgsDefs = "$queryText: String!, ";
   let productArgs = "query: $queryText, ";
-  const variables: any = { queryText };
+  const variables: GqlVariables = { queryText };
 
   if (last && before) {
     queryArgsDefs += "$last: Int!, $before: String";
@@ -675,7 +683,6 @@ export async function searchProducts(params: SearchProductsParams): Promise<Prod
         (product.description && product.description.toLowerCase().includes(queryText.toLowerCase()))
     );
     
-    let paginatedMockProducts;
     let hasNext = false;
     let hasPrev = false;
     let startIdx = 0;
@@ -691,7 +698,7 @@ export async function searchProducts(params: SearchProductsParams): Promise<Prod
       hasNext = true;
     }
     
-    paginatedMockProducts = filtered.slice(startIdx, startIdx + itemsToTake);
+    const paginatedMockProducts = filtered.slice(startIdx, startIdx + itemsToTake);
     if (!before) hasNext = (startIdx + itemsToTake) < filtered.length;
     if (!after && startIdx > 0) hasPrev = true;
     

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react'; // Removido useRef, useEffect
-import Link from 'next/link';
 import { useCart } from '../../context/CartContext';
 import CartItem from './CartItem';
 import { SheetClose } from '../ui/sheet'; // Caminho relativo
