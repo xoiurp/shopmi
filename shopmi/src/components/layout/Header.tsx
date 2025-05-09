@@ -33,7 +33,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"; // Mantido como minúsculo, pois o shadcn-ui cria o arquivo assim.
+} from "@/components/ui/accordion";
 
 interface Collection {
   id: string; // Mudar para string, pois o ID do Shopify é gid://...
