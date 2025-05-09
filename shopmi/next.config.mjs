@@ -1,6 +1,6 @@
-import type { NextConfig } from "next";
+// import type { NextConfig } from "next"; // Removido para .mjs
 
-const nextConfig: NextConfig = {
+const nextConfig = { // Removida a anotação de tipo ': NextConfig'
   images: {
     domains: [
       'i01.appmifile.com',
