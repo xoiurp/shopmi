@@ -48,6 +48,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       image: image.src,
       variantId: id, // Usando o ID do produto como ID da variante por simplicidade
       productId: id,
+      handle: handle, // Adicionado o handle do produto
       quantity: 1,
     });
   };

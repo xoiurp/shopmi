@@ -18,6 +18,7 @@ export interface CartItem {
   image: string; // Imagem da variante ou produto
   variantId: string;
   productId: string;
+  handle: string; // Adicionado o handle do produto
   category?: string; // Categoria do produto (opcional)
   variantOptions?: VariantOption[]; // Opções selecionadas da variante (opcional)
   compareAtPrice?: { amount: string; currencyCode: string } | null; // Preço original (opcional)

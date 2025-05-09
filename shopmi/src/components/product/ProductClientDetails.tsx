@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"; // Importar DropdownMenu do Shadcn
 import { Product } from '@/lib/shopify'; // Importar a interface Product atualizada
 import { ChevronDown, ChevronUp } from 'lucide-react'; // Importar ícones
+import { useCart, CartItem } from '@/context/CartContext'; // Importar useCart e CartItem
 
 // Mapa para traduzir chaves de metafields para nomes amigáveis
 // As chaves aqui são a versão em minúsculas e com espaços das chaves originais dos metafields.
@@ -173,6 +174,8 @@ export default function ProductClientDetails({
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [dropdownOpenStates, setDropdownOpenStates] = useState<{ [key: string]: boolean }>({}); // Estado para controlar dropdowns
   const [selectedImageIndex, setSelectedImageIndex] = useState(0); // Estado para a imagem selecionada na galeria
+  const { addToCart } = useCart(); // Obter a função addToCart do contexto
+
 
   // Inicializa os estados
   useEffect(() => {
@@ -335,6 +338,66 @@ export default function ProductClientDetails({
     }
     return null;
   }, [selectedVariant]);
+
+  // Efeito para lidar com mensagens do iframe
+  useEffect(() => {
+    const handleIframeMessage = (event: MessageEvent) => {
+      // Adicionar verificação de origem se necessário:
+      // if (event.origin !== window.location.origin) return;
+
+      if (event.data && event.data.type === 'customAddToCartClicked') {
+        console.log('Mensagem "customAddToCartClicked" recebida do iframe. Dados:', event.data);
+        if (selectedVariant && selectedVariant.id && selectedVariant.availableForSale) {
+          const itemToAdd: CartItem = {
+            id: selectedVariant.id,
+            title: product.title,
+            price: parseFloat(selectedVariant.price.amount),
+            currencyCode: selectedVariant.price.currencyCode,
+            quantity: quantity, // Usar a quantidade selecionada na página principal
+            image: galleryImages[selectedImageIndex]?.src || mainImage.src || "",
+            variantId: selectedVariant.id,
+            productId: product.id,
+            category: product.productType,
+            variantOptions: selectedVariant.selectedOptions?.map(opt => ({ name: opt.name, value: opt.value })),
+            compareAtPrice: selectedVariant.compareAtPrice,
+            tags: product.tags,
+            handle: product.handle, // Adicionado o handle do produto
+            // Campos adicionais que seu CartItem pode esperar
+          };
+          addToCart(itemToAdd);
+          // O CartContext já define isCartOpen = true, o que deve abrir o drawer.
+          // O alert foi removido conforme solicitado.
+          console.log('Produto adicionado ao carrinho a partir do clique no iframe:', itemToAdd);
+        } else {
+          let warningMessage = 'Não foi possível adicionar o produto ao carrinho. ';
+          if (!selectedVariant) {
+            warningMessage += 'Nenhuma variante de produto está selecionada.';
+          } else if (!selectedVariant.id) {
+            warningMessage += 'A variante selecionada não possui um ID válido.';
+          } else if (!selectedVariant.availableForSale) {
+            warningMessage += 'A variante selecionada não está disponível para venda.';
+          }
+          console.warn(warningMessage, 'SelectedVariant:', selectedVariant);
+          // Removido o alert de aviso também, para consistência.
+          // Considerar adicionar um sistema de notificação (toast) para esses casos.
+        }
+      }
+    };
+
+    window.addEventListener('message', handleIframeMessage);
+
+    return () => {
+      window.removeEventListener('message', handleIframeMessage);
+    };
+  }, [
+    selectedVariant, 
+    product, 
+    quantity, 
+    addToCart, 
+    galleryImages, 
+    selectedImageIndex, 
+    mainImage
+  ]);
 
 
   return (
@@ -528,6 +591,7 @@ export default function ProductClientDetails({
                     image: galleryImages[selectedImageIndex]?.src || mainImage.src || "", // Usar a imagem selecionada na galeria
                     variantId: selectedVariantId,
                     productId: product.id,
+                    handle: product.handle, // Adicionado o handle do produto
                     // Novos dados adicionais
                     category: product.productType, // Usar productType como categoria
                     variantOptions: selectedVariant?.selectedOptions?.map(opt => ({ name: opt.name, value: opt.value })), // Mapear para o formato esperado

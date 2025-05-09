@@ -143,6 +143,26 @@ const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
         /* Estilos básicos para reset ou compatibilidade, se necessário */
         /* Adicione aqui quaisquer estilos que você queira que sejam aplicados DENTRO do iframe */
 
+        /* Estilos para o botão Adicionar ao Carrinho específico */
+        a.xm-link.split_text5451[data-id="1n64fmctaq"],
+        a.xm-link[data-id="1n64fmctaq"] /* Fallback se a classe split_text mudar */ {
+          background-color: #FF6700 !important;
+          color: #FFFFFF !important;
+          padding: 10px 20px !important; /* Ajuste o padding conforme necessário */
+          border-radius: 25px !important; /* Bordas suaves */
+          text-decoration: none !important;
+          display: inline-block !important; /* Para padding e border-radius funcionarem bem */
+          text-align: center;
+          /* Removendo transform e font-size inline para melhor controle, se necessário */
+          /* font-size: 1rem !important; /* Exemplo para sobrescrever o font-size inline se preciso */
+          /* transform: none !important; /* Exemplo para resetar transform */
+        }
+
+        /* Se houver um ícone ou imagem dentro do link, pode precisar de estilos adicionais */
+        a.xm-link.split_text5451[data-id="1n64fmctaq"] img {
+          /* Estilos para imagem dentro do botão, se houver */
+        }
+
       </style>
     `;
     
@@ -222,9 +242,81 @@ const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
             attributes: true
           });
 
+          // Adicionar listeners para botões "Adicionar ao Carrinho"
+          const setupAddToCartListeners = () => {
+            const specificLinks = [
+              document.querySelector('a.split_text5451[data-id="1n64fmctaq"]'),
+              document.querySelector('a.image529[data-id="lmb15nw8jh"]')
+            ].filter(Boolean); // Filtra nulos
+
+            specificLinks.forEach(link => {
+              if (link && !link.dataset.customListenerAttached) {
+                link.addEventListener('click', (event) => {
+                  event.preventDefault();
+                  window.parent.postMessage({ type: 'customAddToCartClicked', source: 'specificButtonInIframe', dataId: link.dataset.id }, '*');
+                  console.log('Botão específico "Adicionar ao Carrinho" (iframe) clicado:', link);
+                });
+                link.dataset.customListenerAttached = 'true'; // Marcar que o listener foi adicionado
+              }
+            });
+
+            // Fallback para outros botões genéricos "Adicionar ao Carrinho"
+            const allPotentialButtons = document.querySelectorAll('a[data-type="button"], button');
+            allPotentialButtons.forEach(button => {
+              if (button.dataset.customListenerAttached) return; // Já tratado pelos seletores específicos
+
+              const buttonText = (button.textContent || button.innerText || "").trim().toLowerCase();
+              const hasAddToCartText = buttonText.includes('adicionar ao carrinho') || buttonText.includes('comprar');
+
+              if (hasAddToCartText) {
+                 // Evitar adicionar listener se for um dos botões específicos já tratados
+                const isSpecificHandled = specificLinks.some(sl => sl === button);
+                if (isSpecificHandled) return;
+
+                button.addEventListener('click', (event) => {
+                  event.preventDefault();
+                  window.parent.postMessage({ type: 'customAddToCartClicked', source: 'genericButtonInIframe', text: buttonText }, '*');
+                  console.log('Botão genérico "Adicionar ao Carrinho" (iframe) clicado:', button);
+                });
+                button.dataset.customListenerAttached = 'true';
+              }
+            });
+          };
+
+          // Chamar setupAddToCartListeners no DOMContentLoaded e após mutações
+          document.addEventListener('DOMContentLoaded', () => {
+            postHeight(); // Manter a lógica de altura
+            setupAddToCartListeners();
+
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+              if (!img.complete) {
+                img.addEventListener('load', () => {
+                  postHeight();
+                }, { once: true });
+                img.addEventListener('error', () => {
+                  postHeight();
+                }, { once: true });
+              }
+            });
+          });
+          
+          // Re-executar setupListeners em mutações no DOM, pois o conteúdo pode mudar
+          const contentMutationObserver = new MutationObserver((mutations) => {
+            postHeight(); // Manter a lógica de altura
+            setupAddToCartListeners(); // Reaplicar listeners se o DOM mudar
+          });
+          contentMutationObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true // Observar atributos também, caso classes/data-ids mudem
+          });
+
+
           window.addEventListener('beforeunload', () => {
             resizeObserver.disconnect();
             mutationObserver.disconnect();
+            contentMutationObserver.disconnect();
           });
 
         })();

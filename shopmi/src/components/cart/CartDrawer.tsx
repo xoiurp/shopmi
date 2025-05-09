@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '../../context/CartContext';
 import CartItem from './CartItem';
@@ -11,6 +11,7 @@ interface CartDrawerProps {
 }
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
+  const drawerRef = useRef<HTMLDivElement>(null);
   const { cart, totalItems, totalPrice, clearCart, selectedShipping } = useCart();
 
   // Função para formatar preço
@@ -24,11 +25,29 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
     }).format(numericPrice);
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
   return (
     <div
+      ref={drawerRef} // Adiciona a referência ao elemento principal do drawer
       className={`fixed inset-y-0 right-0 z-50 w-full md:max-w-md md:w-full md:inset-y-auto md:top-4 md:bottom-4 md:max-h-[calc(100vh-2rem)] bg-white shadow-xl rounded-lg overflow-hidden transform transition-all duration-300 ease-in-out ${ // Adicionado overflow-hidden e transition-all
         isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none' // Usa translate, opacity e pointer-events para ocultar/mostrar
       }`}
+      onMouseDown={(e) => e.stopPropagation()} // Impede a propagação do clique dentro do drawer
     >
       <div className="flex flex-col h-full">
         {/* Cabeçalho do carrinho */}

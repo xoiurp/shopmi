@@ -14,6 +14,7 @@ interface Product {
   image: string; // Imagem da variante ou produto
   variantId: string | null; // Permitir null
   productId: string;
+  handle: string; // Adicionado o handle do produto
   category?: string; // Categoria do produto (opcional)
   variantOptions?: VariantOption[]; // Opções selecionadas da variante (opcional)
   compareAtPrice?: { amount: string; currencyCode: string } | null; // Preço original (opcional)
@@ -61,6 +62,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       variantOptions: product.variantOptions, // Passar as opções da variante
       compareAtPrice: product.compareAtPrice, // Passar o preço original
       tags: product.tags, // Passar as tags
+      handle: product.handle, // Adicionado o handle do produto
     };
 
     // Adicionar ao carrinho

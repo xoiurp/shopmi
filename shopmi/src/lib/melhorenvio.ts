@@ -63,7 +63,9 @@ interface ShippingResponse {
 }
 
 // Configuração da API
-const API_URL = 'https://sandbox.melhorenvio.com.br/api/v2'; // URL do sandbox
+const API_URL = process.env.NODE_ENV === 'development'
+  ? 'https://sandbox.melhorenvio.com.br/api/v2' // URL do sandbox para desenvolvimento
+  : 'https://api.melhorenvio.com.br/api/v2'; // URL de produção para outros ambientes (incluindo Netlify)
 const TOKEN = process.env.MELHOR_ENVIO_TOKEN;
 const CLIENT_ID = process.env.MELHOR_ENVIO_CLIENT_ID;
 // const CLIENT_SECRET = process.env.MELHOR_ENVIO_CLIENT_SECRET; // Removido - não utilizado
