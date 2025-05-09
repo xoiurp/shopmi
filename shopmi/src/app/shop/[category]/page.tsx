@@ -25,7 +25,8 @@ import { FilterIcon } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 12;
 
-export default async function CategoryPage({
+// Temporariamente simplificando a função para isolar o erro de tipo
+export default function CategoryPage({ // Removido async
   params,
   searchParams,
 }: {
@@ -33,53 +34,53 @@ export default async function CategoryPage({
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
   const { category } = params;
-  const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
-  const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
+  // const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
+  // const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
 
-  interface ProductsByCollectionRequestParams {
-    collectionHandle: string;
-    first?: number;
-    last?: number;
-    after?: string | null;
-    before?: string | null;
-    // Adicione aqui outros filtros se getProductsByCollection os suportar
-  }
+  // interface ProductsByCollectionRequestParams {
+  //   collectionHandle: string;
+  //   first?: number;
+  //   last?: number;
+  //   after?: string | null;
+  //   before?: string | null;
+  //   // Adicione aqui outros filtros se getProductsByCollection os suportar
+  // }
 
-  let productParams: ProductsByCollectionRequestParams = { collectionHandle: category, first: ITEMS_PER_PAGE };
-  if (afterCursor) {
-    productParams.after = afterCursor;
-  } else if (beforeCursor) {
-    productParams = { collectionHandle: category, last: ITEMS_PER_PAGE, before: beforeCursor };
-    delete productParams.first;
-  }
+  // let productParams: ProductsByCollectionRequestParams = { collectionHandle: category, first: ITEMS_PER_PAGE };
+  // if (afterCursor) {
+  //   productParams.after = afterCursor;
+  // } else if (beforeCursor) {
+  //   productParams = { collectionHandle: category, last: ITEMS_PER_PAGE, before: beforeCursor };
+  //   delete productParams.first;
+  // }
 
-  const categoryData: CollectionWithProductsPage | null = await getProductsByCollection(productParams);
-  const allCollections: Collection[] = await getCollections();
+  // const categoryData: CollectionWithProductsPage | null = await getProductsByCollection(productParams);
+  // const allCollections: Collection[] = await getCollections();
 
-  // Se a categoria não for encontrada ou não houver dados
-  if (!categoryData) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold mb-4">Categoria não encontrada</h1>
-        <p className="mb-8">A categoria que você está procurando não existe ou foi removida.</p>
-        <Link
-          href="/shop"
-          className="bg-[#FF6700] text-white py-2 px-6 rounded-md hover:bg-[#E05A00] transition-colors inline-block"
-        >
-          Voltar para a loja
-        </Link>
-      </div>
-    );
-  }
+  // // Se a categoria não for encontrada ou não houver dados
+  // if (!categoryData) {
+  //   return (
+  //     <div className="container mx-auto px-4 py-16 text-center">
+  //       <h1 className="text-2xl font-bold mb-4">Categoria não encontrada</h1>
+  //       <p className="mb-8">A categoria que você está procurando não existe ou foi removida.</p>
+  //       <Link
+  //         href="/shop"
+  //         className="bg-[#FF6700] text-white py-2 px-6 rounded-md hover:bg-[#E05A00] transition-colors inline-block"
+  //       >
+  //         Voltar para a loja
+  //       </Link>
+  //     </div>
+  //   );
+  // }
 
-  const products = categoryData.products.edges.map(edge => edge.node);
-  const pageInfo = categoryData.products.pageInfo;
+  // const products = categoryData.products.edges.map(edge => edge.node);
+  // const pageInfo = categoryData.products.pageInfo;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{categoryData.title}</h1>
-        <div className="flex items-center text-sm text-gray-500">
+        <h1 className="text-3xl font-bold mb-2">Categoria: {category}</h1>
+        {/* <div className="flex items-center text-sm text-gray-500">
           <Link href="/" className="hover:text-[#FF6700]">
             Início
           </Link>
@@ -89,25 +90,27 @@ export default async function CategoryPage({
           </Link>
           <span className="mx-2">/</span>
           <span>{categoryData.title}</span>
-        </div>
+        </div> */}
       </div>
 
+      <p>Conteúdo da página da categoria aqui.</p>
+      <p>Search Params: {JSON.stringify(searchParams)}</p>
+
       {/* Filtros e produtos */}
-      <div className="flex flex-col md:flex-row gap-8">
+      {/* <div className="flex flex-col md:flex-row gap-8"> */}
         {/* Sidebar para Desktop */}
-        <div className="hidden md:block w-full md:w-64 flex-shrink-0">
+        {/* <div className="hidden md:block w-full md:w-64 flex-shrink-0">
           <FiltersSidebarContent
             collections={allCollections}
             currentCategoryHandle={category}
           />
-        </div>
+        </div> */}
 
         {/* Lista de produtos */}
-        <div className="flex-grow">
+        {/* <div className="flex-grow"> */}
           {/* Controles: Botão de Filtros (Mobile) e Select de Ordenação */}
-          <div className="flex flex-row md:flex-col items-center gap-4 mb-6"> {/* Container principal dos controles */}
-            <div className="flex flex-row w-full items-center gap-4 md:justify-end md:border-b md:pb-4"> {/* Wrapper para layout mobile e desktop */}
-              {/* Botão de Filtros para Mobile (SheetTrigger) */}
+          {/* <div className="flex flex-row md:flex-col items-center gap-4 mb-6"> 
+            <div className="flex flex-row w-full items-center gap-4 md:justify-end md:border-b md:pb-4"> 
               <div className="w-1/2 md:hidden">
                 <Sheet>
                   <SheetTrigger asChild>
@@ -131,7 +134,6 @@ export default async function CategoryPage({
                 </Sheet>
               </div>
 
-              {/* Select de Ordenação */}
               <div className="flex items-center w-1/2 md:w-auto">
                 <label htmlFor="sort" className="sr-only md:not-sr-only md:mr-2 text-gray-600">
                   Ordenar por:
@@ -148,12 +150,12 @@ export default async function CategoryPage({
                 </select>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Grid de produtos */}
-          {products.length > 0 ? (
+          {/* {products.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6"> {/* Alterado de grid-cols-1 sm:grid-cols-2 para grid-cols-2 */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6"> 
                 {products.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -172,7 +174,6 @@ export default async function CategoryPage({
                   />
                 ))}
               </div>
-              {/* Componente de Paginação */}
               <div className="mt-12 flex justify-center">
                 <Pagination>
                   <PaginationContent>
@@ -181,8 +182,6 @@ export default async function CategoryPage({
                         <PaginationPrevious href={`/shop/${category}?before=${pageInfo.startCursor}`} />
                       </PaginationItem>
                     )}
-
-                    {/* Lógica para números de página (1, 2, 3...) - Requer totalCount */}
                     
                     {pageInfo.hasNextPage && pageInfo.endCursor && (
                       <PaginationItem>
@@ -203,9 +202,9 @@ export default async function CategoryPage({
                 Ver todos os produtos
               </Link>
             </div>
-          )}
-        </div>
-      </div>
+          )} */}
+        {/* </div> */}
+      {/* </div> */}
     </div>
   );
 }
