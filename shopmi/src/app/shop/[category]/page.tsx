@@ -27,7 +27,7 @@ const ITEMS_PER_PAGE = 12;
 
 interface CategoryPageProps {
   params: { category: string };
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams?: any; // Simplificando temporariamente para diagnóstico
 }
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
