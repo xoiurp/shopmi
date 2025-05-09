@@ -23,13 +23,18 @@ import { FilterIcon } from 'lucide-react'; // Ícone para o botão
 
 const ITEMS_PER_PAGE = 12; // Defina quantos produtos por página
 
-export default async function ShopPage({
-  searchParams,
-}: {
-  searchParams?: { [key: string]: string | string[] | undefined };
-}) {
-  const afterCursor = typeof searchParams?.after === 'string' ? searchParams.after : null;
-  const beforeCursor = typeof searchParams?.before === 'string' ? searchParams.before : null;
+interface ShopPageProps {
+  searchParams?: Promise<any>; // Diagnóstico extremo
+}
+
+export default async function ShopPage({ searchParams }: ShopPageProps) {
+  // Para diagnóstico, vamos comentar o uso direto de searchParams para after/before
+  // const actualSearchParams = searchParams ? await searchParams : {}; // Exemplo se fosse usar
+  // const afterCursor = typeof actualSearchParams?.after === 'string' ? actualSearchParams.after : null;
+  // const beforeCursor = typeof actualSearchParams?.before === 'string' ? actualSearchParams.before : null;
+  const afterCursor = null; // Placeholder para diagnóstico
+  const beforeCursor = null; // Placeholder para diagnóstico
+
 
   interface ProductRequestParams {
     first?: number;
