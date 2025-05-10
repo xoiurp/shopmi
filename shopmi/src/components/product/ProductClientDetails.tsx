@@ -2,6 +2,14 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import AddToCartButton from '@/components/product/AddToCartButton';
 import ShippingCalculator from '@/components/shipping/ShippingCalculator'; // Importar o novo componente
 import IsolatedHtmlContentTest from '@/components/product/IsolatedHtmlContentTest';
@@ -148,6 +156,35 @@ export default function ProductClientDetails({
   desktopCss,
   mobileCss,
 }: ProductClientDetailsProps) {
+
+  console.log("Metafields recebidos no ProductClientDetails:", product.metafields); // Log para depuração
+
+  // Lógica para determinar preserveOriginalStyles e fontSizeMetafield
+  let passPreserveOriginalStyles = true; // Padrão: preservar estilos originais, deixar o conteúdo HTML definir a base rem
+  let passFontSizeMetafield: string | undefined = undefined;
+
+  const useCustomRemBaseMetafield = product.metafields?.find(
+    (mf): mf is Metafield => !!(mf && mf.namespace === 'custom' && mf.key === 'use_custom_rem_base')
+  );
+  const remBaseFontSizeMetafield = product.metafields?.find(
+    (mf): mf is Metafield => !!(mf && mf.namespace === 'custom' && mf.key === 'rem_base_font_size')
+  );
+
+  // Se o metafield 'use_custom_rem_base' for true (como string "true" do metafield)
+  if (useCustomRemBaseMetafield?.value === 'true') {
+    passPreserveOriginalStyles = false; // O componente definirá a base para rem
+    if (remBaseFontSizeMetafield?.value) {
+      passFontSizeMetafield = remBaseFontSizeMetafield.value;
+    }
+    // Se remBaseFontSizeMetafield não for fornecido, 
+    // IsolatedHtmlContentTest usará seu fallback interno (ex: "192px")
+    // quando passPreserveOriginalStyles for false e passFontSizeMetafield for undefined.
+  }
+
+
+  const firstCollection = product.collections?.edges?.[0]?.node;
+  const categoryName = firstCollection?.title || product.productType || "Produtos";
+  const categoryHandle = firstCollection?.handle || product.productType?.toLowerCase().replace(/\s+/g, '-') || "produtos";
 
   // --- Extração de Opções (excluindo Cor) ---
   const productOptions = useMemo(() => {
@@ -406,17 +443,31 @@ export default function ProductClientDetails({
       <div className="w-full lg:max-w-[1200px] mx-auto px-4 py-8">
         {/* Breadcrumbs e Frete Grátis no mobile, acima da galeria */}
         <div className="block md:hidden mb-4">
-          <div className="flex items-center text-sm text-gray-500">
+          <div className="flex items-center text-sm">
             {parseFloat(selectedVariant?.price.amount ?? product.priceRange.minVariantPrice.amount) > 800 && (
               <div className="bg-[#00E676] text-white px-3 py-1 rounded-full text-xs font-medium mr-4">
                 Frete Grátis
               </div>
             )}
-            <Link href="/" className="hover:text-[#FF6700]">Home</Link>
-            <span className="mx-2">|</span>
-            <Link href="/shop" className="hover:text-[#FF6700]">Celulares</Link>
-            <span className="mx-2">|</span>
-            <span className="truncate max-w-[150px]">{product.title}</span>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/">Home</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href={`/shop/${categoryHandle}`}>{categoryName}</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{product.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </div>
 
@@ -434,17 +485,31 @@ export default function ProductClientDetails({
           <div className="w-full md:w-1/2">
             {/* Breadcrumbs e Frete Grátis no desktop */}
             <div className="hidden md:block mb-6">
-              <div className="flex items-center text-sm text-gray-500">
+              <div className="flex items-center text-sm">
                 {parseFloat(selectedVariant?.price.amount ?? product.priceRange.minVariantPrice.amount) > 800 && (
                   <div className="bg-[#00E676] text-white px-3 py-1 rounded-full text-xs font-medium mr-4">
                     Frete Grátis
                   </div>
                 )}
-                <Link href="/" className="hover:text-[#FF6700]">Home</Link>
-                <span className="mx-2">|</span>
-                <Link href="/shop" className="hover:text-[#FF6700]">Celulares</Link>
-                <span className="mx-2">|</span>
-                <span className="truncate max-w-[150px]">{product.title}</span>
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <Link href="/">Home</Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <Link href={`/shop/${categoryHandle}`}>{categoryName}</Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>{product.title}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
               </div>
             </div>
             <h1 className="text-3xl font-bold mb-4">{product.title}</h1>
@@ -498,7 +563,7 @@ export default function ProductClientDetails({
                    <div key={option.name}>
                      {/* Label removido */}
                       <DropdownMenu onOpenChange={(open) => setDropdownOpenStates(prev => ({ ...prev, [option.name]: open }))}>
-                        <DropdownMenuTrigger asChild disabled={!selectedColor}>
+                        <DropdownMenuTrigger asChild disabled={uniqueColors.length > 0 && !selectedColor}>
                           <Button variant="outline" className="w-64 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"> {/* Largura fixa e flex para ícone */}
                             <span>{option.name}</span> {/* Nome da opção à esquerda */}
                             <div className="flex items-center"> {/* Grupo para valor e ícone */}
@@ -507,7 +572,7 @@ export default function ProductClientDetails({
                             </div>
                            </Button>
                         </DropdownMenuTrigger>
-                       <DropdownMenuContent align="start"> {/* Alinha à esquerda do trigger, largura automática */}
+                       <DropdownMenuContent align="start" className="w-64"> {/* Força a largura igual ao trigger */}
                          <DropdownMenuLabel>Selecione uma opção</DropdownMenuLabel>
                          <DropdownMenuSeparator />
                         {option.values.map((value) => {
@@ -517,7 +582,7 @@ export default function ProductClientDetails({
                               key={value}
                               disabled={disabled}
                               onSelect={() => !disabled && handleOptionChange(option.name, value)}
-                              className={disabled ? 'text-gray-400 italic cursor-not-allowed' : 'cursor-pointer'}
+                              className={`${disabled ? 'text-gray-400 italic cursor-not-allowed' : 'cursor-pointer'} whitespace-normal`}
                             >
                               {value} {disabled ? '(Indisponível)' : ''}
                             </DropdownMenuItem>
@@ -669,6 +734,8 @@ export default function ProductClientDetails({
           mobileCss={mobileCss}
           mobileFooterHeight={600}
           desktopFooterHeight={500}
+          preserveOriginalStyles={passPreserveOriginalStyles}
+          fontSizeMetafield={passFontSizeMetafield}
         />
       </div>
     </>

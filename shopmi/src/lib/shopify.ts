@@ -78,6 +78,14 @@ export interface Product {
     value: string;
     namespace: string;
   }[];
+  collections?: { // Adicionado para buscar a coleção do produto
+    edges: {
+      node: {
+        title: string;
+        handle: string;
+      };
+    }[];
+  };
 }
 
 export interface Collection {
@@ -200,13 +208,33 @@ export const storefrontClient = new ApolloClient({
 });
 
 // Funções para obter dados (Storefront API)
+
+// Definição do tipo para o filtro de preço estruturado usado na API GraphQL
+export interface ShopifyProductPriceFilter {
+  price: {
+    min?: number;
+    max?: number;
+  };
+}
+// Outros tipos de filtro podem ser adicionados a esta união se necessário no futuro
+// export type ProductFilterInput = ShopifyProductPriceFilter | AnotherFilterType;
+// Por enquanto, ProductFilterInput será um array de ShopifyProductPriceFilter
+// A API espera um array de ProductFilter, onde cada ProductFilter pode ter várias chaves.
+// Nosso ShopifyProductPriceFilter representa um desses ProductFilter focado no preço.
+export type ProductFilterInput = ShopifyProductPriceFilter;
+
+
 interface GqlVariables {
   first?: number;
   after?: string | null;
   last?: number;
   before?: string | null;
   handle?: string;
-  queryText?: string;
+  queryText?: string; // Para searchProducts (busca textual)
+  sortKey?: string; 
+  reverse?: boolean; 
+  query?: string; // Descomentado: Mantido para getProducts e searchProducts (combinado)
+  filters?: ProductFilterInput[]; // Mantido para getProductsByCollection
   // Adicionar outros possíveis campos de variáveis aqui
 }
 
@@ -215,31 +243,68 @@ interface GetProductsParams {
   after?: string | null;
   last?: number;
   before?: string | null;
+  sortKey?: string; // BEST_SELLING, CREATED_AT, ID, PRICE, PRODUCT_TYPE, RELEVANCE, TITLE, UPDATED_AT, VENDOR
+  reverse?: boolean;
+  query?: string; // Reintroduzido para filtro de preço em string para getProducts
+  // filters?: ProductFilterInput[]; // Removido de GetProductsParams
 }
 
 export async function getProducts(params: GetProductsParams): Promise<ProductsConnection> {
-  const { first = 20, after = null, last = null, before = null } = params;
-
-  let queryArgsDefs = "";
-  let productArgs = "";
+  const { first = 20, after = null, last = null, before = null, sortKey, reverse, query } = params; // Usar query
 
   const variables: GqlVariables = {};
+  const queryArgsDefsParts: string[] = [];
+  const productArgsParts: string[] = [];
 
   if (last && before) {
-    queryArgsDefs = "$last: Int!, $before: String";
-    productArgs = "last: $last, before: $before";
+    queryArgsDefsParts.push("$last: Int!", "$before: String");
+    productArgsParts.push("last: $last", "before: $before");
     variables.last = last;
     variables.before = before;
   } else {
-    queryArgsDefs = "$first: Int!, $after: String";
-    productArgs = "first: $first, after: $after";
+    queryArgsDefsParts.push("$first: Int!");
+    productArgsParts.push("first: $first");
     variables.first = first;
-    if (after) variables.after = after; // 'after' é opcional para a primeira página
+    if (after) {
+      queryArgsDefsParts.push("$after: String");
+      productArgsParts.push("after: $after");
+      variables.after = after;
+    }
   }
 
-  const query = `
-    query GetProducts(${queryArgsDefs}) {
-      products(${productArgs}) {
+  if (sortKey) {
+    queryArgsDefsParts.push("$sortKey: ProductSortKeys", "$reverse: Boolean");
+    productArgsParts.push("sortKey: $sortKey", "reverse: $reverse");
+    variables.sortKey = sortKey;
+    variables.reverse = reverse === undefined ? false : reverse;
+  }
+
+  // if (query) { // Lógica para string query de preço removida
+  //   queryArgsDefsParts.push("$query: String");
+  //   variables.query = query; // Esta linha estava comentada, mas a lógica de query deve ser restaurada
+  // }
+
+  // Restaurar lógica para query (string de filtro de preço)
+  if (query) {
+    queryArgsDefsParts.push("$query: String");
+    productArgsParts.push("query: $query");
+    variables.query = query;
+  }
+
+  // Remover lógica para filters, pois o nó raiz 'products' não o aceita
+  // if (filters && filters.length > 0) {
+  //   queryArgsDefsParts.push("$filters: [ProductFilter!]"); 
+  //   productArgsParts.push("filters: $filters");
+  //   variables.filters = filters;
+  // }
+  
+  const queryArgsDefsString = queryArgsDefsParts.join(", ");
+  const productArgsString = productArgsParts.join(", ");
+  console.log("[ShopifyLib GetProducts] productArgsString:", productArgsString); 
+
+  const gqlQuery = `
+    query GetProducts(${queryArgsDefsString}) {
+      products(${productArgsString}) {
         edges {
           node {
             id
@@ -273,11 +338,28 @@ export async function getProducts(params: GetProductsParams): Promise<ProductsCo
   `;
 
   try {
+    console.log("[ShopifyLib GetProducts] Constructed gqlQuery String:\n", gqlQuery); // Log da string completa
+    console.log("[ShopifyLib GetProducts] GQL Variables:", JSON.stringify(variables, null, 2)); // Log para depuração
     const response = await storefrontClient.query({
-      query: gql(query),
+      query: gql(gqlQuery), 
       variables,
     });
-    return response.data.products as ProductsConnection;
+
+    // Log da resposta completa da API quando um filtro de preço está ativo
+    if (variables.query && variables.query.includes("price:")) {
+        console.log("[ShopifyLib GetProducts] API Response (for price filter query):", JSON.stringify(response.data, null, 2));
+    }
+
+    if (response && response.data && response.data.products) {
+      return response.data.products as ProductsConnection;
+    } else {
+      console.warn("[ShopifyLib GetProducts] No products data in response:", response.data ? response.data : response); // Log mais detalhado da resposta
+      // Retornar uma estrutura vazia válida para evitar erros de runtime
+      return {
+        edges: [],
+        pageInfo: { hasNextPage: false, hasPreviousPage: false }
+      };
+    }
   } catch (error)
  {
     console.error('Erro ao buscar produtos:', error);
@@ -330,6 +412,14 @@ export async function getProductByHandle(handle: string): Promise<Product | null
         descriptionHtml
         productType # Buscar productType
         tags # Buscar tags
+        collections(first: 1) { # Buscar a primeira coleção associada
+          edges {
+            node {
+              title
+              handle
+            }
+          }
+        }
         priceRange {
           minVariantPrice {
             amount
@@ -404,6 +494,9 @@ export async function getProductByHandle(handle: string): Promise<Product | null
           {namespace: "custom", key: "audio_video"},
           # Conteúdo HTML específico para dispositivos móveis
           {namespace: "custom", key: "html_mobile"},
+          # Metafields para controle de REM base
+          {namespace: "custom", key: "use_custom_rem_base"},
+          {namespace: "custom", key: "rem_base_font_size"},
           # Metafields específicos para Smartwatch (sw_)
           {namespace: "custom", key: "sw_conectividade-bluetooth"},
           {namespace: "custom", key: "sw_conectividade_gps"},
@@ -484,33 +577,69 @@ export async function getCollections(): Promise<Collection[]> {
   }
 }
 
-interface GetProductsByCollectionParams extends GetProductsParams {
+interface GetProductsByCollectionParams { // Não estende mais GetProductsParams diretamente para evitar herdar 'filters' duas vezes se GetProductsParams mudar
   collectionHandle: string;
+  first?: number;
+  after?: string | null;
+  last?: number;
+  before?: string | null;
+  sortKey?: string;
+  reverse?: boolean;
+  // query?: string; // Mantido para compatibilidade com GqlVariables, mas não usado diretamente por GetProductsByCollectionParams
+  filters?: ProductFilterInput[]; // Adicionado
 }
 
 export async function getProductsByCollection(
   params: GetProductsByCollectionParams
 ): Promise<CollectionWithProductsPage | null> {
-  const { collectionHandle, first = 20, after = null, last = null, before = null } = params;
+  const { collectionHandle, first = 20, after = null, last = null, before = null, sortKey, reverse, filters } = params;
 
-  let queryArgsDefs = "$handle: String!, ";
-  let productArgs = "";
   const variables: GqlVariables = { handle: collectionHandle };
+  const queryArgsDefsParts: string[] = ["$handle: String!"];
+  const productArgsParts: string[] = []; // Para o nó products DENTRO da collection
 
   if (last && before) {
-    queryArgsDefs += "$last: Int!, $before: String";
-    productArgs = "last: $last, before: $before";
+    queryArgsDefsParts.push("$last: Int!", "$before: String");
+    productArgsParts.push("last: $last", "before: $before");
     variables.last = last;
     variables.before = before;
   } else {
-    queryArgsDefs += "$first: Int!, $after: String";
-    productArgs = "first: $first, after: $after";
+    queryArgsDefsParts.push("$first: Int!");
+    productArgsParts.push("first: $first");
     variables.first = first;
-    if (after) variables.after = after;
+    if (after) {
+      queryArgsDefsParts.push("$after: String");
+      productArgsParts.push("after: $after");
+      variables.after = after;
+    }
   }
 
-  const query = `
-    query GetProductsByCollection(${queryArgsDefs}) {
+  if (sortKey) {
+    queryArgsDefsParts.push("$sortKey: ProductCollectionSortKeys", "$reverse: Boolean");
+    productArgsParts.push("sortKey: $sortKey", "reverse: $reverse");
+    variables.sortKey = sortKey;
+    variables.reverse = reverse === undefined ? false : reverse;
+  }
+
+  // if (query) { // Lógica para string query de preço removida
+  //   queryArgsDefsParts.push("$query: String");
+  //   productArgsParts.push("query: $query");
+  //   variables.query = query;
+  // }
+  
+  if (filters && filters.length > 0) {
+    // Para produtos dentro de uma coleção, o filtro é aplicado no nó 'products'.
+    // A definição da variável $filters ainda é no nível da query principal.
+    queryArgsDefsParts.push("$filters: [ProductFilter!]");
+    productArgsParts.push("filters: $filters"); // Adiciona filters ao argumento de products()
+    variables.filters = filters;
+  }
+
+  const queryArgsDefsString = queryArgsDefsParts.join(", ");
+  const productArgsString = productArgsParts.join(", ");
+
+  const gqlQuery = `
+    query GetProductsByCollection(${queryArgsDefsString}) {
       collectionByHandle(handle: $handle) {
         id
         title
@@ -520,7 +649,7 @@ export async function getProductsByCollection(
           originalSrc
           altText
         }
-        products(${productArgs}) {
+        products(${productArgsString}) {
           edges {
             node {
               id
@@ -555,15 +684,21 @@ export async function getProductsByCollection(
   `;
 
   try {
+    console.log("[ShopifyLib GetProductsByCollection] GQL Variables for handle " + collectionHandle + ":", JSON.stringify(variables, null, 2)); // Log para depuração
     const response = await storefrontClient.query({
-      query: gql(query),
+      query: gql(gqlQuery), // Usando gqlQuery
       variables,
     });
     
-    if (response.data.collectionByHandle) {
+    if (response && response.data && response.data.collectionByHandle) {
       return response.data.collectionByHandle as CollectionWithProductsPage;
-    } else {
+    } else if (response && response.data && !response.data.collectionByHandle) {
+      // A query foi bem-sucedida, mas a coleção não foi encontrada pelo handle
       console.error(`Coleção não encontrada: ${collectionHandle}`);
+      return null; 
+    } else {
+      // A resposta da API não tem 'data' ou é inesperada
+      console.error(`Resposta inesperada da API para a coleção ${collectionHandle}:`, response);
       return null; // Retorna null se a coleção não for encontrada
     }
   } catch (error) {
@@ -609,32 +744,84 @@ export async function getProductsByCollection(
   }
 }
 
-interface SearchProductsParams extends GetProductsParams {
-  queryText: string;
+interface SearchProductsParams {
+  queryText: string; // Este é o texto da busca principal
+  first?: number;
+  after?: string | null;
+  last?: number;
+  before?: string | null;
+  sortKey?: string;
+  reverse?: boolean;
+  priceFilterString?: string; // Para passar o filtro de preço como string
+  // filters?: ProductFilterInput[]; // Removido, pois o nó raiz 'products' não aceita 'filters'
 }
 
 export async function searchProducts(params: SearchProductsParams): Promise<ProductsConnection> {
-  const { queryText, first = 20, after = null, last = null, before = null } = params;
+  const { queryText, first = 20, after = null, last = null, before = null, sortKey, reverse, priceFilterString } = params;
+  
+  const variables: GqlVariables = {};
+  const queryArgsDefsParts: string[] = [];
+  const productArgsParts: string[] = [];
 
-  let queryArgsDefs = "$queryText: String!, ";
-  let productArgs = "query: $queryText, ";
-  const variables: GqlVariables = { queryText };
+  // Combinar queryText e priceFilterString para o argumento 'query' da API
+  let finalQueryString = queryText || ""; // Inicia com queryText ou string vazia se queryText for nulo/undefined
+  if (priceFilterString) {
+    if (finalQueryString) {
+      finalQueryString = `(${finalQueryString}) AND (${priceFilterString})`;
+    } else {
+      finalQueryString = priceFilterString;
+    }
+  }
+
+  // Adicionar o argumento 'query' combinado se houver algo nele
+  if (finalQueryString) {
+    queryArgsDefsParts.push("$query: String!"); // $query agora é para finalQueryString
+    productArgsParts.push("query: $query");
+    variables.query = finalQueryString; // 'query' na GqlVariables
+  }
+
 
   if (last && before) {
-    queryArgsDefs += "$last: Int!, $before: String";
-    productArgs += "last: $last, before: $before";
+    queryArgsDefsParts.push("$last: Int!", "$before: String");
+    productArgsParts.push("last: $last", "before: $before");
     variables.last = last;
     variables.before = before;
   } else {
-    queryArgsDefs += "$first: Int!, $after: String";
-    productArgs += "first: $first, after: $after";
+    queryArgsDefsParts.push("$first: Int!");
+    productArgsParts.push("first: $first");
     variables.first = first;
-    if (after) variables.after = after;
+    if (after) {
+      queryArgsDefsParts.push("$after: String");
+      productArgsParts.push("after: $after");
+      variables.after = after;
+    }
   }
 
-  const gqlQuery = `
-    query SearchProducts(${queryArgsDefs}) {
-      products(${productArgs}) {
+  if (sortKey) {
+    queryArgsDefsParts.push("$sortKey: ProductSortKeys", "$reverse: Boolean");
+    productArgsParts.push("sortKey: $sortKey", "reverse: $reverse");
+    variables.sortKey = sortKey;
+    variables.reverse = reverse === undefined ? false : reverse;
+  }
+
+  // Remover a lógica de 'filters' para searchProducts
+  // if (filters && filters.length > 0) {
+  //   queryArgsDefsParts.push("$filters: [ProductFilter!]");
+  //   productArgsParts.push("filters: $filters");
+  //   variables.filters = filters;
+  // }
+  
+  const queryArgsDefsString = queryArgsDefsParts.join(", ");
+  const productArgsString = productArgsParts.join(", ");
+
+  // Se não houver queryText nem filters, a API pode retornar erro ou todos os produtos.
+  // Idealmente, searchProducts deve sempre ter queryText.
+  // Se productArgsString estiver vazio (além de first/last), pode ser problemático.
+  // No entanto, a lógica atual garante que first/last sempre estarão lá.
+
+  const gqlSearchQuery = `
+    query SearchProducts(${queryArgsDefsString}) {
+      products(${productArgsString}) {
         edges {
           node {
             id
@@ -668,11 +855,21 @@ export async function searchProducts(params: SearchProductsParams): Promise<Prod
   `;
 
   try {
+    console.log("[ShopifyLib SearchProducts] GQL Variables:", JSON.stringify(variables, null, 2)); // Log para depuração
     const response = await storefrontClient.query({
-      query: gql(gqlQuery),
+      query: gql(gqlSearchQuery), // Usando gqlSearchQuery
       variables,
     });
-    return response.data.products as ProductsConnection;
+    if (response && response.data && response.data.products) {
+      return response.data.products as ProductsConnection;
+    } else {
+      console.warn("[ShopifyLib SearchProducts] No products data in response:", response);
+      // Retornar uma estrutura vazia válida
+      return {
+        edges: [],
+        pageInfo: { hasNextPage: false, hasPreviousPage: false }
+      };
+    }
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
     const { mockProducts } = createMockData();

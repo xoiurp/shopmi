@@ -128,17 +128,39 @@ const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
                url('/fonts/MiSans-Bold.woff2') format('woff2');
           font-display: swap;
         }
+
+        *, *::before, *::after {
+          box-sizing: border-box;
+        }
         
         html, body {
           margin: 0;
           padding: 0;
           overflow: hidden; /* Remove barras de rolagem no conteúdo */
+          width: 100%;
           ${!preserveOriginalStyles ? `
           font-family: 'MiSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          font-size: ${fontSizeMetafield ? fontSizeMetafield : '16px'};
+          /* Aplicar ao html para que rem seja calculado com base neste valor */
           ` : ''}
-          width: 100%;
         }
+
+        ${!preserveOriginalStyles ? (
+          isMobile 
+          ? `
+        html { 
+          font-size: 40px; /* Base para REM em mobile */
+        }
+          ` 
+          : `
+        html { 
+          font-size: ${fontSizeMetafield ? fontSizeMetafield : '192px'}; /* Base para REM em desktop */
+        }
+          `
+        ) : `
+        /* Se preserveOriginalStyles for true, e o conteúdo HTML injetado tiver seu próprio 
+           estilo de font-size no seu elemento <html> ou <body>, ele será usado.
+           Caso contrário, o padrão do navegador para o iframe será usado. */
+        `}
         
         /* Estilos básicos para reset ou compatibilidade, se necessário */
         /* Adicione aqui quaisquer estilos que você queira que sejam aplicados DENTRO do iframe */
@@ -326,7 +348,7 @@ const IsolatedHtmlContentTest: React.FC<IsolatedHtmlContentProps> = ({
     // Montar o documento completo
     const fullContent = `
       <!DOCTYPE html>
-      <html>
+      <html ${!preserveOriginalStyles && fontSizeMetafield ? '' : ''}>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${combinedStyles}
